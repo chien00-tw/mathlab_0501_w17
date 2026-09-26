@@ -1,1919 +1,2469 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>消失的領地 - 數感互動學習系統</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons CDN -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- QRCode.js CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <!-- html2canvas 匯出高解析圖片 CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>消失的領地(一) | 數感實驗室</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Font Awesome Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  
+  <!-- QRCode.js CDN for dynamic iPad scanning -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;700;900&display=swap');
     
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@600;800;900&display=swap');
-        
-        body {
-            font-family: 'Noto Sans TC', sans-serif;
-            background-color: #F8FAFC;
-            touch-action: manipulation;
-            -webkit-tap-highlight-color: transparent;
-        }
+    * {
+      font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    
+    input, select, textarea {
+      user-select: text;
+    }
 
-        /* 專為國小五年級 iPad 觸控設計的大尺寸立體按鈕 */
-        .btn-touch {
-            min-height: 52px;
-            border-bottom-width: 5px;
-            transition: all 0.15s ease-in-out;
-        }
-        .btn-touch:active {
-            transform: translateY(3px);
-            border-bottom-width: 2px;
-        }
-        
-        /* 隱藏捲動條但保留功能 */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
+    /* iPad High-contrast & smooth scrolling */
+    html, body {
+      background-color: #F8FAFC;
+      color: #0F172A;
+      overscroll-behavior-y: none;
+    }
 
-        /* Canvas 觸控手勢相容性強化 */
-        canvas {
-            touch-action: none;
-            cursor: grab;
-        }
-        canvas:active {
-            cursor: grabbing;
-        }
+    /* Force high contrast inside dropdown menus on iOS/iPadOS */
+    select option {
+      background-color: #FFFFFF !important;
+      color: #0F172A !important;
+      font-weight: 700 !important;
+    }
 
-        /* 遊戲倒數平滑進度條動畫 */
-        .timer-progress-bar {
-            transition: width 1s linear;
-        }
+    /* Custom high-contrast scrollbars */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #E2E8F0;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #94A3B8;
+      border-radius: 9999px;
+    }
 
-        /* 4F 快速選擇標籤樣式 */
-        .chip-tag {
-            cursor: pointer;
-            user-select: none;
-            transition: all 0.15s ease;
-        }
-        .chip-tag:active {
-            transform: scale(0.95);
-        }
-    </style>
+    /* Tooltip styles */
+    .tooltip-container {
+      position: relative;
+    }
+    .tooltip-text {
+      visibility: hidden;
+      opacity: 0;
+      position: absolute;
+      top: 115%;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #0F172A;
+      color: #FFFFFF;
+      text-align: center;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      z-index: 60;
+      transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+      pointer-events: none;
+    }
+    .tooltip-container:hover .tooltip-text,
+    .tooltip-container:focus-within .tooltip-text {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    /* Jumbo touch target styling */
+    .touch-btn {
+      min-height: 52px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+    }
+  </style>
 </head>
-<body class="text-slate-800 flex flex-col min-h-screen justify-between select-none">
+<body class="min-h-screen flex flex-col justify-between">
 
-    <!-- 頂部工具列：純圖示設計 (QR Code ➔ 全螢幕 ➔ 課程設計說明) -->
-    <header class="bg-indigo-950 text-white p-3 shadow-xl sticky top-0 z-40 border-b-2 border-indigo-800">
-        <div class="max-w-6xl mx-auto flex justify-between items-center">
-            
-            <!-- 左側：系統名稱與版本控制編號 (v1.9.0) -->
-            <div class="flex items-center gap-3">
-                <span class="text-2xl md:text-3xl font-black tracking-wide text-amber-300">消失的領地</span>
-                <span class="bg-indigo-800 text-indigo-200 text-xs md:text-sm px-2.5 py-1 rounded-full font-mono border border-indigo-600 font-black shadow-inner">v1.9.0</span>
-            </div>
-
-            <!-- 右側功能鍵區：純圖示 (① QR Code ➔ ② 全螢幕 ➔ ③ 課程設計說明) -->
-            <div class="flex items-center gap-2 md:gap-4">
-                <!-- ① QR Code 掃碼分享 -->
-                <button onclick="openModal('qrModal')" class="w-12 h-12 md:w-14 md:h-14 bg-indigo-800 hover:bg-indigo-700 active:bg-indigo-900 rounded-2xl flex items-center justify-center text-xl md:text-2xl shadow-md transition-all border-b-4 border-indigo-950" title="QR Code 掃碼分享" aria-label="QR Code">
-                    <i class="fa-solid fa-qrcode text-amber-300"></i>
-                </button>
-
-                <!-- ② 全螢幕切換 -->
-                <button onclick="toggleFullscreen()" class="w-12 h-12 md:w-14 md:h-14 bg-indigo-800 hover:bg-indigo-700 active:bg-indigo-900 rounded-2xl flex items-center justify-center text-xl md:text-2xl shadow-md transition-all border-b-4 border-indigo-950" title="全螢幕切換" aria-label="Fullscreen">
-                    <i id="fullscreenIcon" class="fa-solid fa-expand text-sky-300"></i>
-                </button>
-
-                <!-- ③ 課程設計說明 -->
-                <button onclick="openModal('guideModal')" class="w-12 h-12 md:w-14 md:h-14 bg-indigo-800 hover:bg-indigo-700 active:bg-indigo-900 rounded-2xl flex items-center justify-center text-xl md:text-2xl shadow-md transition-all border-b-4 border-indigo-950" title="課程設計說明" aria-label="Course Design Guide">
-                    <i class="fa-solid fa-book-open text-rose-300"></i>
-                </button>
-            </div>
+  <!-- Top Fixed Navigation Bar -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b-2 border-slate-200 shadow-sm px-3 sm:px-6 py-2.5">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
+      
+      <!-- Brand & Version (v1.1.0 Stacking) -->
+      <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+        <div class="w-11 h-11 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-xl font-black shadow-md shadow-emerald-200">
+          <i class="fa-solid fa-shapes"></i>
         </div>
-    </header>
-
-    <!-- 主要學習區域 -->
-    <main class="max-w-5xl w-full mx-auto p-4 md:p-6 flex-grow space-y-8">
-
-        <!-- 導覽頁籤：含 4 大任務活動 (農夫爭地 ➔ 圖形變身 ➔ 領地挑戰賽 ➔ 成果展示牆) -->
-        <nav class="grid grid-cols-2 sm:grid-cols-4 gap-2 md:gap-3 bg-slate-200 p-2 rounded-2xl shadow-inner">
-            <button id="nav-tab1" onclick="switchTab(1)" class="py-3 rounded-xl text-base md:text-lg font-black transition-all bg-amber-400 text-slate-900 shadow-md">
-                一、農夫爭地
-            </button>
-            <button id="nav-tab2" onclick="switchTab(2)" class="py-3 rounded-xl text-base md:text-lg font-black transition-all text-slate-600 hover:bg-slate-300">
-                二、圖形變身
-            </button>
-            <button id="nav-tab3" onclick="switchTab(3)" class="py-3 rounded-xl text-base md:text-lg font-black transition-all text-slate-600 hover:bg-slate-300 flex items-center justify-center gap-1">
-                <i class="fa-solid fa-gamepad text-indigo-600"></i>
-                <span>三、領地挑戰賽</span>
-            </button>
-            <button id="nav-tab4" onclick="switchTab(4)" class="py-3 rounded-xl text-base md:text-lg font-black transition-all text-slate-600 hover:bg-slate-300 flex items-center justify-center gap-1">
-                <span>四、成果展示牆</span>
-                <span id="tabBadge" class="bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full font-black">0</span>
-            </button>
-        </nav>
-
-        <!-- ==================== 活動一：課程導入 (農夫爭地) ==================== -->
-        <section id="act1" class="space-y-6">
-            <!-- 故事引導卡片 -->
-            <div class="bg-white rounded-3xl p-6 md:p-8 border-4 border-indigo-100 shadow-xl space-y-6">
-                <div class="flex items-center gap-3 text-indigo-900">
-                    <i class="fa-solid fa-book-open-reader text-3xl text-amber-500"></i>
-                    <h2 class="text-2xl md:text-3xl font-black">土地爭奪故事</h2>
-                </div>
-
-                <div class="bg-amber-50 p-6 rounded-2xl border-2 border-amber-200 text-lg md:text-2xl leading-relaxed text-slate-800">
-                    森林邊緣住著一位<strong class="text-emerald-700 font-black">阿基伯</strong>與一位<strong class="text-blue-700 font-black">山姆叔叔</strong>。他們各自擁有一塊土地，而且兩塊土地的<strong class="text-rose-600 font-black">「底」與「高」完全相同</strong>！
-                    然而，阿基伯的土地是<strong class="text-emerald-700 font-black">「平行四邊形」</strong>，山姆叔叔的土地是<strong class="text-blue-700 font-black">「三角形」</strong>。兩人每天都為了誰的土地比較大爭吵不休……
-                </div>
-
-                <!-- 互動圖表比較展示 -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-                    <!-- 平行四邊形土地 -->
-                    <div class="bg-emerald-50 border-4 border-emerald-300 rounded-2xl p-4 text-center">
-                        <span class="text-xl md:text-2xl font-black text-emerald-800 block mb-2">阿基伯的土地 (平行四邊形)</span>
-                        <svg viewBox="0 0 300 180" class="w-full h-44 mx-auto" role="img" aria-label="平行四邊形土地">
-                            <polygon points="60,140 220,140 260,40 100,40" fill="#a7f3d0" stroke="#059669" stroke-width="4"/>
-                            <line x1="60" y1="140" x2="220" y2="140" stroke="#dc2626" stroke-width="4" stroke-dasharray="6,6"/>
-                            <text x="140" y="165" font-size="18" font-weight="bold" fill="#dc2626">底 = 10 公尺</text>
-                            <line x1="100" y1="40" x2="100" y2="140" stroke="#2563eb" stroke-width="4" stroke-dasharray="4,4"/>
-                            <text x="110" y="95" font-size="18" font-weight="bold" fill="#2563eb">高 = 6 公尺</text>
-                        </svg>
-                    </div>
-
-                    <!-- 三角形土地 -->
-                    <div class="bg-sky-50 border-4 border-sky-300 rounded-2xl p-4 text-center">
-                        <span class="text-xl md:text-2xl font-black text-sky-800 block mb-2">山姆叔叔的土地 (三角形)</span>
-                        <svg viewBox="0 0 300 180" class="w-full h-44 mx-auto" role="img" aria-label="三角形土地">
-                            <polygon points="60,140 220,140 140,40" fill="#bae6fd" stroke="#0284c7" stroke-width="4"/>
-                            <line x1="60" y1="140" x2="220" y2="140" stroke="#dc2626" stroke-width="4" stroke-dasharray="6,6"/>
-                            <text x="140" y="165" font-size="18" font-weight="bold" fill="#dc2626">底 = 10 公尺</text>
-                            <line x1="140" y1="40" x2="140" y2="140" stroke="#2563eb" stroke-width="4" stroke-dasharray="4,4"/>
-                            <text x="150" y="95" font-size="18" font-weight="bold" fill="#2563eb">高 = 6 公尺</text>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 學生猜測選單 (大觸控按鈕) -->
-            <div class="bg-white rounded-3xl p-6 md:p-8 border-4 border-amber-200 shadow-xl space-y-4">
-                <h3 class="text-xl md:text-3xl font-black text-center text-slate-900">
-                    <i class="fa-solid fa-circle-question text-amber-500 mr-2"></i>猜一猜：誰的土地面積比較大？
-                </h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-                    <button id="btnPred1" onclick="makePrediction('平行四邊形比較大 (阿基伯)', 1)" class="btn-touch bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-xl md:text-2xl rounded-2xl border-b-emerald-700 shadow-lg p-4">
-                        阿基伯比較大<br><span class="text-sm font-normal">(平行四邊形)</span>
-                    </button>
-                    <button id="btnPred2" onclick="makePrediction('三角形比較大 (山姆叔叔)', 2)" class="btn-touch bg-sky-500 hover:bg-sky-600 text-white font-extrabold text-xl md:text-2xl rounded-2xl border-b-sky-700 shadow-lg p-4">
-                        山姆叔叔比較大<br><span class="text-sm font-normal">(三角形)</span>
-                    </button>
-                    <button id="btnPred3" onclick="makePrediction('兩者一樣大 (面積相等)', 3)" class="btn-touch bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xl md:text-2xl rounded-2xl border-b-amber-700 shadow-lg p-4">
-                        兩個人一樣大<br><span class="text-sm font-normal">(面積相同)</span>
-                    </button>
-                </div>
-                <div id="predictionResult" class="hidden text-center p-4 bg-indigo-50 border-2 border-indigo-200 rounded-xl text-xl font-bold text-indigo-900"></div>
-            </div>
-        </section>
-
-        <!-- ==================== 活動二：核心發展 (HTML5 Canvas 動態圖形實驗) ==================== -->
-        <section id="act2" class="space-y-8 hidden">
-            
-            <!-- 任務 1：平行四邊形轉化為長方形 -->
-            <div class="bg-white rounded-3xl p-6 md:p-8 border-4 border-indigo-100 shadow-xl space-y-6">
-                <div class="flex justify-between items-center flex-wrap gap-2">
-                    <h3 class="text-2xl md:text-3xl font-black text-indigo-900 flex items-center gap-3">
-                        <span class="bg-indigo-600 text-white rounded-2xl w-10 h-10 flex items-center justify-center text-xl">1</span>
-                        平行四邊形 剪貼 Canvas 實驗室
-                    </h3>
-                    <span class="text-lg font-bold text-slate-500">平移剪裁 (支援手指拖曳與滑桿)</span>
-                </div>
-
-                <!-- HTML5 Canvas 畫布 1 -->
-                <div class="bg-slate-100 rounded-2xl p-4 border-2 border-slate-300 text-center relative overflow-hidden space-y-4">
-                    <canvas id="canvas1" class="w-full max-w-xl mx-auto h-60 bg-white rounded-xl shadow-inner border border-slate-200"></canvas>
-                    
-                    <!-- 拖曳控制滑桿 -->
-                    <div class="max-w-xl mx-auto flex items-center gap-4 bg-slate-200 p-3 rounded-2xl">
-                        <span class="text-lg font-bold text-slate-700 min-w-fit"><i class="fa-solid fa-arrows-left-right text-emerald-600 mr-1"></i>平移進度：</span>
-                        <input type="range" id="paraSlider" min="0" max="100" value="0" oninput="onParaSliderChange(this.value)" class="w-full h-3 bg-emerald-200 rounded-lg appearance-none cursor-pointer accent-emerald-600">
-                        <span id="paraPercent" class="text-xl font-black text-emerald-800 min-w-[50px]">0%</span>
-                    </div>
-
-                    <!-- 操作按鈕 -->
-                    <div class="flex justify-center gap-3 md:gap-6 flex-wrap">
-                        <button onclick="animateParaTransform()" class="btn-touch bg-emerald-600 hover:bg-emerald-700 text-white text-xl font-black px-6 py-3 rounded-2xl border-b-emerald-900 shadow-md flex items-center gap-2">
-                            <i class="fa-solid fa-play"></i>自動剪貼展示
-                        </button>
-                        <button onclick="resetParaCanvas()" class="btn-touch bg-slate-500 hover:bg-slate-600 text-white text-xl font-black px-6 py-3 rounded-2xl border-b-slate-800 shadow-md flex items-center gap-2">
-                            <i class="fa-solid fa-rotate-left"></i>復原原狀
-                        </button>
-                    </div>
-                </div>
-
-                <div class="bg-emerald-50 p-4 rounded-2xl border-2 border-emerald-200 text-lg md:text-xl font-bold text-emerald-950">
-                    <i class="fa-solid fa-lightbulb text-amber-500 mr-2 text-2xl"></i>
-                    發現：平行四邊形剪貼後會變成<strong class="text-rose-600">長方形</strong>，底與高完全相同：
-                    <div class="text-center my-2 text-2xl md:text-3xl font-black text-indigo-900">平行四邊形面積 = 底 × 高</div>
-                </div>
-            </div>
-
-            <!-- 任務 2：兩全等三角形拼平行四邊形 -->
-            <div class="bg-white rounded-3xl p-6 md:p-8 border-4 border-indigo-100 shadow-xl space-y-6">
-                <div class="flex justify-between items-center flex-wrap gap-2">
-                    <h3 class="text-2xl md:text-3xl font-black text-indigo-900 flex items-center gap-3">
-                        <span class="bg-indigo-600 text-white rounded-2xl w-10 h-10 flex items-center justify-center text-xl">2</span>
-                        雙三角形 拼貼 Canvas 實驗室
-                    </h3>
-                    <span class="text-lg font-bold text-slate-500">旋轉 180° (支援手指拖曳與滑桿)</span>
-                </div>
-
-                <!-- HTML5 Canvas 畫布 2 -->
-                <div class="bg-slate-100 rounded-2xl p-4 border-2 border-slate-300 text-center relative overflow-hidden space-y-4">
-                    <canvas id="canvas2" class="w-full max-w-xl mx-auto h-60 bg-white rounded-xl shadow-inner border border-slate-200"></canvas>
-                    
-                    <!-- 旋轉控制滑桿 -->
-                    <div class="max-w-xl mx-auto flex items-center gap-4 bg-slate-200 p-3 rounded-2xl">
-                        <span class="text-lg font-bold text-slate-700 min-w-fit"><i class="fa-solid fa-rotate text-sky-600 mr-1"></i>旋轉角度：</span>
-                        <input type="range" id="triSlider" min="0" max="180" value="0" oninput="onTriSliderChange(this.value)" class="w-full h-3 bg-sky-200 rounded-lg appearance-none cursor-pointer accent-sky-600">
-                        <span id="triAngle" class="text-xl font-black text-sky-800 min-w-[50px]">0°</span>
-                    </div>
-
-                    <!-- 操作按鈕 -->
-                    <div class="flex justify-center gap-3 md:gap-6 flex-wrap">
-                        <button onclick="animateTriRotate()" class="btn-touch bg-sky-600 hover:bg-sky-700 text-white text-xl font-black px-6 py-3 rounded-2xl border-b-sky-900 shadow-md flex items-center gap-2">
-                            <i class="fa-solid fa-play"></i>自動旋轉拼貼
-                        </button>
-                        <button onclick="resetTriCanvas()" class="btn-touch bg-slate-500 hover:bg-slate-600 text-white text-xl font-black px-6 py-3 rounded-2xl border-b-slate-800 shadow-md flex items-center gap-2">
-                            <i class="fa-solid fa-rotate-left"></i>復原原狀
-                        </button>
-                    </div>
-                </div>
-
-                <div class="bg-sky-50 p-4 rounded-2xl border-2 border-sky-200 text-lg md:text-xl font-bold text-sky-950">
-                    <i class="fa-solid fa-lightbulb text-amber-500 mr-2 text-2xl"></i>
-                    發現：兩個全等的三角形可以拼成一個平行四邊形，所以單個三角形面積要<strong class="text-rose-600">除以 2</strong>：
-                    <div class="text-center my-2 text-2xl md:text-3xl font-black text-indigo-900">三角形面積 = (底 × 高) ÷ 2</div>
-                </div>
-            </div>
-
-            <!-- 任務 3：生態棲地反思討論 -->
-            <div class="bg-amber-50 rounded-3xl p-6 md:p-8 border-4 border-amber-300 shadow-xl space-y-4">
-                <h3 class="text-2xl md:text-3xl font-black text-amber-900 flex items-center gap-3">
-                    <i class="fa-solid fa-leaf text-emerald-600"></i>
-                    生態反思：直線切割對土地與動物的影響？
-                </h3>
-                <p class="text-lg md:text-2xl leading-relaxed text-slate-800 font-bold">
-                    在數學中，我們可以用直線隨意切割、旋轉圖形。但如果這塊土地是森林與野生動物的家，人為地劃分直線圍籬與界線，會對棲息在裡面的動物造成什麼樣的影響呢？
-                </p>
-            </div>
-        </section>
-
-        <!-- ==================== 活動三：領地挑戰賽 (限時2分鐘，導入 4F 反思) ==================== -->
-        <section id="act3" class="space-y-6 hidden">
-            <div class="bg-white rounded-3xl p-6 md:p-8 border-4 border-indigo-200 shadow-xl space-y-6">
-                <!-- 遊戲狀態看板 -->
-                <div class="flex flex-wrap items-center justify-between gap-4 border-b-4 border-indigo-100 pb-4">
-                    <div>
-                        <h2 class="text-2xl md:text-3xl font-black text-indigo-950 flex items-center gap-2">
-                            <i class="fa-solid fa-gamepad text-indigo-600"></i>
-                            領地保衛戰：2 分鐘幾何挑戰賽
-                        </h2>
-                        <p class="text-slate-500 font-bold text-sm md:text-base mt-1">
-                            限時 2 分鐘（120 秒），累積答錯 3 次終止！挑戰結束後將自動匯入 4F 反思架構總結學習！
-                        </p>
-                    </div>
-
-                    <!-- 儀表數據 -->
-                    <div class="flex items-center gap-3 md:gap-5">
-                        <!-- 倒數計時 -->
-                        <div class="bg-slate-100 border-2 border-slate-300 px-4 py-2 rounded-2xl text-center min-w-[100px]">
-                            <span class="text-xs font-black text-slate-500 block">剩餘時間</span>
-                            <span id="gameTimer" class="text-2xl md:text-3xl font-black text-indigo-900">02:00</span>
-                        </div>
-
-                        <!-- 生命值 (3顆心，錯3次終止) -->
-                        <div class="bg-rose-50 border-2 border-rose-200 px-4 py-2 rounded-2xl text-center min-w-[100px]">
-                            <span class="text-xs font-black text-rose-500 block">生命值 (錯3次終止)</span>
-                            <div id="gameHearts" class="text-2xl text-rose-500 flex justify-center gap-1 mt-0.5">
-                                <i class="fa-solid fa-heart"></i>
-                                <i class="fa-solid fa-heart"></i>
-                                <i class="fa-solid fa-heart"></i>
-                            </div>
-                        </div>
-
-                        <!-- 得分 -->
-                        <div class="bg-amber-50 border-2 border-amber-200 px-4 py-2 rounded-2xl text-center min-w-[80px]">
-                            <span class="text-xs font-black text-amber-600 block">得分</span>
-                            <span id="gameScore" class="text-2xl md:text-3xl font-black text-amber-700">0</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 倒數進度條 -->
-                <div class="w-full bg-slate-200 h-4 rounded-full overflow-hidden shadow-inner">
-                    <div id="gameProgressBar" class="bg-indigo-600 h-full w-full timer-progress-bar"></div>
-                </div>
-
-                <!-- 遊戲主體視窗 -->
-                <div id="gameMainCard" class="bg-slate-50 border-4 border-indigo-100 rounded-3xl p-6 md:p-8 min-h-[360px] flex flex-col justify-center items-center text-center">
-                    
-                    <!-- 1. 遊戲準備開始畫面 -->
-                    <div id="gameIntroView" class="space-y-6 max-w-lg mx-auto">
-                        <div class="w-24 h-24 rounded-3xl bg-indigo-100 text-indigo-600 mx-auto flex items-center justify-center text-5xl shadow-md">
-                            <i class="fa-solid fa-stopwatch"></i>
-                        </div>
-                        <div class="space-y-2">
-                            <h3 class="text-2xl md:text-3xl font-black text-slate-800">準備好捍衛領地了嗎？</h3>
-                            <p class="text-base md:text-lg font-bold text-slate-600 leading-relaxed">
-                                遊戲時間共有 <strong class="text-indigo-700">2 分鐘</strong>，涵蓋平行四邊形、三角形面積計算、公式推導邏輯與生態劃界思考。
-                                請看清楚題目再作答，<strong class="text-rose-600">答錯 3 次將會淘汰！</strong>
-                            </p>
-                        </div>
-                        
-                        <!-- 參賽者/小組名稱輸入 -->
-                        <div class="bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-3 max-w-sm mx-auto flex items-center justify-center gap-2">
-                            <span class="text-slate-700 font-black text-base md:text-lg">小組/姓名：</span>
-                            <input type="text" id="gamePlayerName" class="border-2 border-indigo-300 rounded-xl px-3 py-1.5 text-base md:text-lg font-black focus:outline-none focus:border-indigo-600 w-44 text-center bg-white" placeholder="例：幾何小隊">
-                        </div>
-
-                        <button onclick="startTerritoryGame()" class="btn-touch w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black text-2xl py-4 rounded-2xl border-b-indigo-900 shadow-xl flex items-center justify-center gap-3">
-                            <i class="fa-solid fa-play"></i>開始挑戰 (限時2分鐘)
-                        </button>
-                    </div>
-
-                    <!-- 2. 遊戲進行中題型畫面 -->
-                    <div id="gamePlayingView" class="w-full max-w-2xl space-y-6 hidden text-left">
-                        <div class="flex justify-between items-center bg-indigo-100 px-4 py-2 rounded-xl text-indigo-950 font-black">
-                            <span id="questionNumBadge" class="text-base md:text-lg">第 1 題</span>
-                            <span id="comboBadge" class="text-emerald-700 text-sm font-black hidden"><i class="fa-solid fa-fire mr-1"></i>連續答對！</span>
-                        </div>
-
-                        <!-- 題目文字卡 -->
-                        <div class="bg-white p-6 rounded-2xl border-2 border-indigo-200 shadow-sm">
-                            <p id="gameQuestionText" class="text-xl md:text-2xl font-black text-slate-800 leading-relaxed">
-                                題目讀取中...
-                            </p>
-                        </div>
-
-                        <!-- 4 個選項按鈕 -->
-                        <div id="gameOptionsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <!-- 動態注入選項按鈕 -->
-                        </div>
-                    </div>
-
-                    <!-- 3. 遊戲結束 ➔ 4F 反思引導畫面 (重構核心) -->
-                    <div id="gameOverView" class="w-full max-w-3xl space-y-6 hidden text-left">
-                        
-                        <!-- 上半部：成績統計結算條 -->
-                        <div class="bg-white border-4 border-indigo-200 rounded-3xl p-5 md:p-6 shadow-md flex flex-wrap items-center justify-between gap-4">
-                            <div class="flex items-center gap-4">
-                                <div id="gameOverIconBox" class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-inner">
-                                    <!-- 動態圖示 -->
-                                </div>
-                                <div>
-                                    <h3 id="gameOverTitle" class="text-2xl md:text-3xl font-black text-slate-900">挑戰結算</h3>
-                                    <p id="gameOverSubtitle" class="text-sm md:text-base font-bold text-slate-500">成效數據已鎖定</p>
-                                </div>
-                            </div>
-
-                            <div class="flex gap-4 text-center">
-                                <div class="bg-indigo-50 px-4 py-2 rounded-2xl border border-indigo-200">
-                                    <span class="text-xs font-bold text-indigo-600 block">最終得分</span>
-                                    <span id="finalScoreText" class="text-2xl md:text-3xl font-black text-indigo-900">0</span>
-                                </div>
-                                <div class="bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-200">
-                                    <span class="text-xs font-bold text-emerald-600 block">答對題數</span>
-                                    <span id="finalCorrectText" class="text-2xl md:text-3xl font-black text-emerald-700">0</span>
-                                </div>
-                                <div class="bg-rose-50 px-4 py-2 rounded-2xl border border-rose-200">
-                                    <span class="text-xs font-bold text-rose-500 block">失誤次數</span>
-                                    <span id="finalMistakeText" class="text-2xl md:text-3xl font-black text-rose-600">0</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 下半部：直接導入 4F 思考模式引導表單 -->
-                        <div class="bg-white border-4 border-indigo-200 rounded-3xl p-6 md:p-8 shadow-lg space-y-6">
-                            <div class="flex items-center justify-between border-b-2 border-indigo-100 pb-3 flex-wrap gap-2">
-                                <h4 class="text-xl md:text-2xl font-black text-indigo-950 flex items-center gap-2">
-                                    <i class="fa-solid fa-brain text-amber-500"></i>
-                                    領地戰報 ➔ 4F 深度學習反思
-                                </h4>
-                                <span class="text-sm font-bold text-slate-500">點擊快捷標籤或自行修改文字</span>
-                            </div>
-
-                            <!-- F1: Facts 客觀事實 -->
-                            <div class="space-y-2">
-                                <div class="flex items-center gap-2">
-                                    <span class="bg-blue-600 text-white text-sm font-black px-3 py-1 rounded-xl">Facts 客觀事實</span>
-                                    <span class="text-base font-bold text-slate-700">在 2 分鐘挑戰中，你完成了什麼事實紀錄？</span>
-                                </div>
-                                <textarea id="reflectFacts" rows="2" class="w-full p-3 border-2 border-blue-200 rounded-xl text-base md:text-lg font-bold text-slate-800 bg-blue-50/40 focus:outline-none focus:border-blue-500"></textarea>
-                            </div>
-
-                            <!-- F2: Feelings 感受體驗 -->
-                            <div class="space-y-2">
-                                <div class="flex items-center gap-2">
-                                    <span class="bg-emerald-600 text-white text-sm font-black px-3 py-1 rounded-xl">Feelings 感受體驗</span>
-                                    <span class="text-base font-bold text-slate-700">在限時心算與失誤扣心的緊張過程中，你的感受如何？</span>
-                                </div>
-                                <!-- 快捷點選晶片標籤 -->
-                                <div class="flex flex-wrap gap-2 text-xs md:text-sm font-bold">
-                                    <span onclick="appendChip('reflectFeelings', '⚡緊張刺激')" class="chip-tag bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-lg border border-emerald-300">⚡ 緊張刺激</span>
-                                    <span onclick="appendChip('reflectFeelings', '🎯充滿信心')" class="chip-tag bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-lg border border-emerald-300">🎯 充滿信心</span>
-                                    <span onclick="appendChip('reflectFeelings', '💡恍然大悟')" class="chip-tag bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-lg border border-emerald-300">💡 恍然大悟</span>
-                                    <span onclick="appendChip('reflectFeelings', '⏱️手忙腳亂差點扣心')" class="chip-tag bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-lg border border-emerald-300">⏱️ 手忙腳亂差點扣心</span>
-                                </div>
-                                <textarea id="reflectFeelings" rows="2" class="w-full p-3 border-2 border-emerald-200 rounded-xl text-base md:text-lg font-bold text-slate-800 bg-emerald-50/40 focus:outline-none focus:border-emerald-500" placeholder="點擊上方標籤或在此寫下你的真實心情..."></textarea>
-                            </div>
-
-                            <!-- F3: Findings 幾何發現 -->
-                            <div class="space-y-2">
-                                <div class="flex items-center gap-2">
-                                    <span class="bg-amber-500 text-white text-sm font-black px-3 py-1 rounded-xl">Findings 幾何發現</span>
-                                    <span class="text-base font-bold text-slate-700">從作答與幾何推導中，你發現了什麼關鍵公式規律或陷阱？</span>
-                                </div>
-                                <!-- 快捷點選晶片標籤 -->
-                                <div class="flex flex-wrap gap-2 text-xs md:text-sm font-bold">
-                                    <span onclick="appendChip('reflectFindings', '三角形面積算完一定要除以2')" class="chip-tag bg-amber-100 text-amber-900 px-2.5 py-1 rounded-lg border border-amber-300">📐 三角形一定要除以2</span>
-                                    <span onclick="appendChip('reflectFindings', '斜邊不是高，高必須垂直於底邊')" class="chip-tag bg-amber-100 text-amber-900 px-2.5 py-1 rounded-lg border border-amber-300">⚠️ 斜邊不是高，高要垂直</span>
-                                    <span onclick="appendChip('reflectFindings', '同底等高的平行四邊形面積完全相等')" class="chip-tag bg-amber-100 text-amber-900 px-2.5 py-1 rounded-lg border border-amber-300">✨ 同底等高面積相同</span>
-                                    <span onclick="appendChip('reflectFindings', '人為直線圍籬會造成森林動物棲地破碎')" class="chip-tag bg-amber-100 text-amber-900 px-2.5 py-1 rounded-lg border border-amber-300">🐾 直線圍籬使棲地破碎</span>
-                                </div>
-                                <textarea id="reflectFindings" rows="2" class="w-full p-3 border-2 border-amber-200 rounded-xl text-base md:text-lg font-bold text-slate-800 bg-amber-50/40 focus:outline-none focus:border-amber-500" placeholder="點擊上方標籤或在此記錄你的幾何大發現..."></textarea>
-                            </div>
-
-                            <!-- F4: Future 未來行動 -->
-                            <div class="space-y-2">
-                                <div class="flex items-center gap-2">
-                                    <span class="bg-rose-600 text-white text-sm font-black px-3 py-1 rounded-xl">Future 未來行動</span>
-                                    <span class="text-base font-bold text-slate-700">下次遇到複雜土地測量或幾何算式，你會採取什麼好策略？</span>
-                                </div>
-                                <!-- 快捷點選晶片標籤 -->
-                                <div class="flex flex-wrap gap-2 text-xs md:text-sm font-bold">
-                                    <span onclick="appendChip('reflectFuture', '先仔細找出互相垂直的垂直底與高')" class="chip-tag bg-rose-100 text-rose-900 px-2.5 py-1 rounded-lg border border-rose-300">🔍 先找出垂直底高</span>
-                                    <span onclick="appendChip('reflectFuture', '檢查題目有沒有斜邊陷阱干擾數字')" class="chip-tag bg-rose-100 text-rose-900 px-2.5 py-1 rounded-lg border border-rose-300">🚫 避開斜邊陷阱數字</span>
-                                    <span onclick="appendChip('reflectFuture', '為野生動物保留生態廊道不任意拉直線圍籬')" class="chip-tag bg-rose-100 text-rose-900 px-2.5 py-1 rounded-lg border border-rose-300">🌲 保留生態廊道</span>
-                                </div>
-                                <textarea id="reflectFuture" rows="2" class="w-full p-3 border-2 border-rose-200 rounded-xl text-base md:text-lg font-bold text-slate-800 bg-rose-50/40 focus:outline-none focus:border-rose-500" placeholder="點擊上方標籤或寫下你下次的解題與行動策略..."></textarea>
-                            </div>
-
-                            <!-- 提交與再玩一次功能鍵 -->
-                            <div class="flex flex-wrap gap-4 pt-2">
-                                <button onclick="saveReflectionToShowcase()" class="btn-touch flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xl font-black py-3 px-6 rounded-2xl border-b-indigo-950 shadow-xl flex items-center justify-center gap-2">
-                                    <i class="fa-solid fa-cloud-arrow-up"></i>發布 4F 成果至展示牆
-                                </button>
-                                <button onclick="startTerritoryGame()" class="btn-touch bg-slate-600 hover:bg-slate-700 text-white text-xl font-black py-3 px-6 rounded-2xl border-b-slate-900 shadow-md flex items-center justify-center gap-2">
-                                    <i class="fa-solid fa-rotate-right"></i>再挑戰一次
-                                </button>
-                            </div>
-                        </div>
-
-                    </div>
-
-                </div>
-            </div>
-        </section>
-
-        <!-- ==================== 活動四：成果展示牆 (直接公開呈現 4F 成果與戰報，支援 PNG 匯出) ==================== -->
-        <section id="act4" class="space-y-6 hidden">
-            <div class="bg-white rounded-3xl p-6 md:p-8 border-4 border-indigo-100 shadow-xl space-y-6">
-                <div class="flex justify-between items-center border-b-4 border-indigo-100 pb-4 flex-wrap gap-4">
-                    <div>
-                        <h2 class="text-2xl md:text-3xl font-black text-indigo-950 flex items-center gap-3">
-                            <i class="fa-solid fa-shapes text-amber-500"></i>
-                            全班學習成果展示牆
-                        </h2>
-                        <p class="text-slate-500 font-bold mt-1 text-base md:text-lg">公開呈現全班幾何探究歷程、領地挑戰賽成績與 4F 深度學習反思</p>
-                    </div>
-                    <div class="flex gap-3 flex-wrap">
-                        <!-- 成果匯出成高解析度圖片檔 (PNG) -->
-                        <button onclick="exportShowcasePNG()" class="btn-touch bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-6 py-3 rounded-2xl border-b-emerald-900 shadow-md flex items-center gap-2 text-lg">
-                            <i class="fa-solid fa-file-image"></i>匯出成果圖檔 (PNG)
-                        </button>
-                        <button onclick="promptClearShowcase()" class="btn-touch bg-rose-500 hover:bg-rose-600 text-white font-extrabold px-5 py-3 rounded-2xl border-b-rose-800 shadow-md flex items-center gap-2 text-lg">
-                            <i class="fa-solid fa-trash"></i>清空展示牆
-                        </button>
-                    </div>
-                </div>
-
-                <!-- 截圖捕獲主容器：專屬白底與內襯，確保匯出的 PNG 清晰整齊 -->
-                <div id="showcaseCaptureArea" class="bg-white p-4 rounded-3xl">
-                    <div class="border-b-2 border-indigo-200 pb-3 mb-4 flex justify-between items-center">
-                        <div>
-                            <span class="text-xl font-black text-indigo-950">消失的領地 - 全班學習成果與 4F 反思總表</span>
-                            <span class="text-xs text-slate-500 block font-bold">數感實驗室互動學習系統 | 幾何面積推導、戰績統計與 4F 後設認知</span>
-                        </div>
-                        <span class="text-xs font-mono font-bold bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-lg text-indigo-700" id="captureTimestamp">
-                            成果紀錄
-                        </span>
-                    </div>
-
-                    <!-- 學生動態作品陳列卡片區 (結構化展示 4F 反思) -->
-                    <div id="showcaseContainer" class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-                        <!-- 若無作品時之佔位說明 -->
-                        <div id="emptyShowcaseState" class="col-span-full text-center py-16 bg-slate-50 border-4 border-dashed border-slate-200 rounded-3xl space-y-3">
-                            <i class="fa-solid fa-clipboard-question text-6xl text-slate-300"></i>
-                            <p class="text-2xl font-black text-slate-500">目前尚無作品展示</p>
-                            <p class="text-lg font-bold text-slate-400">請完成「活動三」領地挑戰賽，系統將直接導入 4F 反思架構，並將成果公開呈現於此！</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- 頁尾 (嚴格符合規範要求：數感實驗室  | 互動學習系統 | Design：S.C. Kuo) -->
-    <footer class="bg-slate-900 text-slate-300 py-6 text-center text-lg font-bold border-t-4 border-slate-700">
-        數感實驗室  | 互動學習系統 | Design：S.C. Kuo
-    </footer>
-
-    <!-- ==================== 彈出對話視窗 MODALS ==================== -->
-
-    <!-- ① QR Code 彈窗 (動態產生即時 QR Code 與一鍵複製網址備用功能) -->
-    <div id="qrModal" onclick="onBackdropClick(event, 'qrModal')" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-6 md:p-8 max-w-sm w-full text-center space-y-6 shadow-2xl border-4 border-indigo-200">
-            <h3 class="text-2xl font-black text-slate-900">掃描開啟目前網頁</h3>
-            
-            <!-- 動態 QR Code 生成區域 -->
-            <div id="qrcode" class="flex justify-center p-3 bg-white border-4 border-slate-200 rounded-2xl mx-auto w-52 h-52 items-center overflow-hidden"></div>
-            
-            <p class="text-slate-500 text-sm font-bold">支援 iPad 相機直接對準條碼掃描加入</p>
-
-            <div class="space-y-3">
-                <button onclick="copyPageUrl()" class="btn-touch w-full bg-emerald-500 hover:bg-emerald-600 text-white text-xl font-extrabold py-3 rounded-2xl border-b-emerald-700 shadow-md flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-copy"></i>一鍵複製網址
-                </button>
-                <button onclick="closeModal('qrModal')" class="btn-touch w-full bg-slate-200 hover:bg-slate-300 text-slate-800 text-xl font-extrabold py-3 rounded-2xl border-b-slate-400">
-                    關閉視窗
-                </button>
-            </div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-xl sm:text-2xl font-black tracking-tight text-slate-800">
+            消失的領地<span class="text-emerald-600">(一)</span>
+          </h1>
+          <span id="appVersionBadge" class="bg-amber-100 text-amber-900 border border-amber-300 text-xs sm:text-sm font-black px-2.5 py-0.5 rounded-full shadow-inner">
+            v1.4.0
+          </span>
         </div>
+      </div>
+
+      <!-- Navigation Tabs (Fixed at header, never scrolls away) -->
+      <nav class="flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar py-1">
+        <button id="tabBtnLab" onclick="switchTab('lab')" class="touch-btn px-3 sm:px-4 py-2 rounded-xl text-base sm:text-lg font-bold transition-all bg-emerald-600 text-white shadow-md shadow-emerald-200">
+          <i class="fa-solid fa-compass-drafting mr-1.5"></i>
+          <span>探究實驗室</span>
+        </button>
+        <button id="tabBtnGame" onclick="switchTab('game')" class="touch-btn px-3 sm:px-4 py-2 rounded-xl text-base sm:text-lg font-bold transition-all bg-slate-100 hover:bg-slate-200 text-slate-700">
+          <i class="fa-solid fa-stopwatch-20 mr-1.5 text-rose-500"></i>
+          <span>2分鐘速答賽</span>
+        </button>
+        <button id="tabBtnRecord" onclick="switchTab('record')" class="touch-btn px-3 sm:px-4 py-2 rounded-xl text-base sm:text-lg font-bold transition-all bg-slate-100 hover:bg-slate-200 text-slate-700">
+          <i class="fa-solid fa-clipboard-check mr-1.5 text-indigo-500"></i>
+          <span>4F思考成果</span>
+        </button>
+      </nav>
+
+      <!-- Right Action Icons (Pure Icons, Strictly Ordered: ① QR ➔ ② Maximize ➔ ③ Book) -->
+      <div class="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+        <!-- 1. QR Code 掃碼連結 [QR Icon] -->
+        <div class="tooltip-container">
+          <button id="btnQrCode" onclick="openQrModal()" class="w-12 h-12 rounded-xl bg-slate-100 hover:bg-emerald-50 hover:text-emerald-600 text-slate-700 flex items-center justify-center text-xl transition-colors border border-slate-200 active:scale-95 shadow-sm" aria-label="QR Code 掃碼連結">
+            <i class="fa-solid fa-qrcode"></i>
+          </button>
+          <span class="tooltip-text">QR Code 掃碼連結</span>
+        </div>
+
+        <!-- 2. 全螢幕 toggle [Maximize Icon] -->
+        <div class="tooltip-container">
+          <button id="btnFullscreen" onclick="toggleFullscreen()" class="w-12 h-12 rounded-xl bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-700 flex items-center justify-center text-xl transition-colors border border-slate-200 active:scale-95 shadow-sm" aria-label="全螢幕模式切換">
+            <i id="fullscreenIcon" class="fa-solid fa-expand"></i>
+          </button>
+          <span class="tooltip-text">全螢幕模式切換</span>
+        </div>
+
+        <!-- 3. 課程指引 [Book Icon] -->
+        <div class="tooltip-container">
+          <button id="btnGuide" onclick="openGuideModal()" class="w-12 h-12 rounded-xl bg-slate-100 hover:bg-amber-50 hover:text-amber-600 text-slate-700 flex items-center justify-center text-xl transition-colors border border-slate-200 active:scale-95 shadow-sm" aria-label="課程設計說明">
+            <i class="fa-solid fa-book-open"></i>
+          </button>
+          <span class="tooltip-text">課程設計說明</span>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Top Subbar: Student Identity Selector -->
+  <section class="bg-emerald-50/70 border-b border-emerald-200/80 px-4 py-2.5">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 text-slate-800">
+      <div class="flex items-center gap-2">
+        <span class="bg-emerald-600 text-white p-2 rounded-lg text-sm">
+          <i class="fa-solid fa-user-graduate"></i>
+        </span>
+        <span class="text-base sm:text-lg font-black text-emerald-950">探究學員資料：</span>
+      </div>
+
+      <!-- Class & Seat Selectors -->
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- Class Selector -->
+        <div class="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-emerald-300 shadow-sm">
+          <label for="selectClass" class="font-bold text-sm text-slate-600">班級：</label>
+          <select id="selectClass" class="font-black text-emerald-800 text-base sm:text-lg bg-transparent focus:outline-none cursor-pointer">
+            <!-- Will populate 五年一班 ~ 五年十四班 -->
+          </select>
+        </div>
+
+        <!-- Seat Selector -->
+        <div class="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-emerald-300 shadow-sm">
+          <label for="selectSeat" class="font-bold text-sm text-slate-600">座號：</label>
+          <select id="selectSeat" class="font-black text-emerald-800 text-base sm:text-lg bg-transparent focus:outline-none cursor-pointer">
+            <!-- Will populate 1號 ~ 28號 -->
+          </select>
+        </div>
+
+        <!-- Student Name -->
+        <div class="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-emerald-300 shadow-sm">
+          <label for="inputName" class="font-bold text-sm text-slate-600">姓名：</label>
+          <input id="inputName" type="text" value="野比大雄" class="w-28 font-black text-emerald-900 text-base sm:text-lg bg-transparent focus:outline-none" placeholder="請輸入姓名" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Container -->
+  <main class="flex-grow max-w-7xl w-full mx-auto p-3 sm:p-6">
+    
+    <!-- TAB 1: 探究實驗室 (Territory Inquiry & Interactive Canvas) -->
+    <div id="tabContentLab" class="space-y-6">
+      
+      <!-- Story Narrative Banner (農夫爭地) -->
+      <div class="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white rounded-3xl p-5 sm:p-7 shadow-lg relative overflow-hidden">
+        <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div class="space-y-2">
+            <span class="inline-block bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-black tracking-wide uppercase">
+              <i class="fa-solid fa-wheat-awn mr-1"></i> 活動一：課程導入故事
+            </span>
+            <h2 class="text-2xl sm:text-3xl font-black">🌱 農夫爭地：誰的領地比較大？</h2>
+            <p class="text-amber-100 text-base sm:text-lg leading-relaxed max-w-3xl">
+              兩位農夫領取了地契，阿明擁有一塊「平行四邊形」土地，阿豪擁有一塊「三角形」土地。
+              丈量員發現兩塊土地<strong>「底長一樣（8公尺）」</strong>，<strong>「垂直高也一樣（6公尺）」</strong>！
+              直覺看起來三角形尖尖的，平行四邊形扁長——到底是誰的面積比較大？還是一樣大呢？
+            </p>
+          </div>
+          <div class="bg-white/10 backdrop-blur-md border border-white/30 p-4 rounded-2xl text-center flex-shrink-0 self-stretch md:self-auto flex flex-col justify-center">
+            <span class="text-xs uppercase text-amber-200 font-bold">認知衝突提問</span>
+            <span class="text-xl sm:text-2xl font-black mt-1">底同、高同＝？</span>
+            <span class="text-xs text-amber-100 mt-1">請在下方親手操作剪拼驗證！</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive Canvas Card -->
+      <div class="bg-white rounded-3xl p-4 sm:p-6 border-2 border-slate-200 shadow-sm">
+        
+        <!-- Mode Switcher -->
+        <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-200">
+          <div class="flex flex-wrap gap-2">
+            <button onclick="setLabMode('cutParallelogram')" id="modeBtnCut" class="touch-btn px-4 py-2.5 rounded-2xl font-black text-base sm:text-lg bg-emerald-600 text-white shadow-md">
+              <i class="fa-solid fa-scissors mr-2"></i> 1. 平行四邊形 剪拼長方形
+            </button>
+            <button onclick="setLabMode('twoTriangles')" id="modeBtnTri" class="touch-btn px-4 py-2.5 rounded-2xl font-black text-base sm:text-lg bg-slate-100 text-slate-700 hover:bg-slate-200">
+              <i class="fa-solid fa-rotate mr-2"></i> 2. 雙全等三角形 旋轉合體
+            </button>
+            <button onclick="setLabMode('ecoCorridor')" id="modeBtnEco" class="touch-btn px-4 py-2.5 rounded-2xl font-black text-base sm:text-lg bg-slate-100 text-slate-700 hover:bg-slate-200">
+              <i class="fa-solid fa-paw mr-2 text-amber-600"></i> 3. 消失的領地 生態綠廊思辨
+            </button>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button onclick="resetLabCanvas()" class="touch-btn px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 font-bold text-sm">
+              <i class="fa-solid fa-arrow-rotate-left mr-1.5"></i> 重設視圖
+            </button>
+          </div>
+        </div>
+
+        <!-- Canvas Drawing Stage Container (Unobstructed Layout: Formula Header Docked Above Drawing Area) -->
+        <div class="w-full bg-slate-900 rounded-2xl overflow-hidden mt-4 shadow-inner flex flex-col border border-slate-800">
+          
+          <!-- Top Dynamic Formula & Concept Header (Docked above canvas, zero graphic occlusion) -->
+          <div id="canvasOverlayFormula" class="bg-slate-950/90 border-b border-slate-800/80 px-4 py-3 sm:px-5 sm:py-3.5 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-white transition-all">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <span id="formulaBadge" class="inline-block bg-emerald-500 text-slate-950 text-xs font-black px-2 py-0.5 rounded-md">
+                  幾何轉換中
+                </span>
+                <h4 id="formulaTitle" class="text-base sm:text-lg font-black text-emerald-300">
+                  平行四邊形面積推導
+                </h4>
+              </div>
+              <p id="formulaDesc" class="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
+                沿著「垂直高」剪下直角三角形，平移到另一側補齊，剛好形成一個「長方形」！
+              </p>
+            </div>
+            <div id="formulaMath" class="flex-shrink-0 text-xs sm:text-sm font-black text-amber-300 bg-slate-900/90 px-3.5 py-2 rounded-xl border border-amber-400/30 shadow-inner">
+              長方形面積 ＝ 長 × 寬 ➔ 平行四邊形面積 ＝ 底 × 高
+            </div>
+          </div>
+
+          <!-- Dedicated Graphic Drawing Stage (100% Unobstructed Viewport) -->
+          <div class="relative w-full" style="min-height: 380px; height: 48vh; max-height: 480px;">
+            <canvas id="labCanvas" class="w-full h-full block"></canvas>
+
+            <!-- Bottom Control Slider on Canvas -->
+            <div class="absolute bottom-3 inset-x-3 sm:bottom-4 sm:inset-x-4 bg-slate-950/85 backdrop-blur-md border border-slate-700/80 p-2.5 sm:p-3.5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-2.5 shadow-2xl z-20">
+              <div class="flex items-center gap-2.5 w-full sm:w-auto">
+                <span class="text-white font-black text-xs sm:text-sm flex-shrink-0">
+                  <i class="fa-solid fa-sliders text-emerald-400 mr-1"></i> 轉化進度：
+                </span>
+                <input id="sliderProgress" type="range" min="0" max="100" value="0" class="w-full sm:w-60 accent-emerald-500 cursor-pointer h-2.5 bg-slate-800 rounded-lg" oninput="updateLabProgress(this.value)" />
+                <span id="labelProgress" class="text-emerald-400 font-black text-sm w-12 text-right">0%</span>
+              </div>
+
+              <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <button onclick="autoPlayTransformation()" class="touch-btn px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs sm:text-sm shadow-md active:scale-95 transition-all">
+                  <i class="fa-solid fa-play mr-1.5"></i> 動畫演示
+                </button>
+                <button onclick="stepTransformation()" class="touch-btn px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs sm:text-sm border border-slate-600 active:scale-95">
+                  <i class="fa-solid fa-forward-step mr-1.5"></i> 下一步
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- 3 Cognitive Insights Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+          <div class="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-4 flex gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-lg flex-shrink-0">
+              <i class="fa-solid fa-vector-square"></i>
+            </div>
+            <div>
+              <h5 class="font-black text-emerald-950 text-base">為什麼是「底 × 高」？</h5>
+              <p class="text-sm text-emerald-800 mt-1">剪下來的直角三角形面積沒有消失，只是平移補到了另一邊，面積完全守恆！</p>
+            </div>
+          </div>
+
+          <div class="bg-blue-50 border-2 border-blue-200 rounded-2xl p-4 flex gap-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center text-lg flex-shrink-0">
+              <i class="fa-solid fa-divide"></i>
+            </div>
+            <div>
+              <h5 class="font-black text-blue-950 text-base">三角形為什麼「除以 2」？</h5>
+              <p class="text-sm text-blue-800 mt-1">因為任兩個「全等三角形」旋轉貼合後，必定可以拼成一個同底同高的平行四邊形。</p>
+            </div>
+          </div>
+
+          <div class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-4 flex gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-600 text-white flex items-center justify-center text-lg flex-shrink-0">
+              <i class="fa-solid fa-tree"></i>
+            </div>
+            <div>
+              <h5 class="font-black text-amber-950 text-base">消失的領地：生態反思</h5>
+              <p class="text-sm text-amber-900 mt-1">人類劃分農田建圍籬，切斷了石虎與動物通道。我們能用數學幾何為動物保留生態綠廊嗎？</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
     </div>
 
-    <!-- ③ 課程設計說明 彈窗 (三大項：學習目標、網頁操作說明、課堂提問建議) -->
-    <div id="guideModal" onclick="onBackdropClick(event, 'guideModal')" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-6 md:p-8 max-w-3xl w-full max-h-[88vh] overflow-y-auto no-scrollbar space-y-6 shadow-2xl border-4 border-indigo-200">
-            <div class="flex justify-between items-center border-b-4 border-indigo-100 pb-3">
-                <h3 class="text-2xl md:text-3xl font-black text-indigo-900 flex items-center gap-3">
-                    <i class="fa-solid fa-book-open text-rose-500"></i>課程設計說明
-                </h3>
-                <button onclick="closeModal('guideModal')" class="text-slate-400 hover:text-slate-600 text-3xl font-black">
-                    &times;
-                </button>
-            </div>
-            
-            <div class="space-y-6 text-left">
-                <!-- 第一大項：學習目標 -->
-                <div class="bg-amber-50 p-5 rounded-2xl border-2 border-amber-200 space-y-3">
-                    <h4 class="text-xl md:text-2xl font-black text-amber-950 flex items-center gap-2">
-                        <i class="fa-solid fa-bullseye text-amber-600"></i>一、學習目標
-                    </h4>
-                    <ul class="space-y-2 text-base md:text-xl text-slate-800 font-bold leading-relaxed">
-                        <li class="flex items-start gap-2">
-                            <i class="fa-solid fa-check text-emerald-600 mt-1"></i>
-                            <span><strong>認知理解：</strong>透過動態「平移」將平行四邊形轉化為長方形（推導底×高）；並藉由「旋轉 180°」將兩個全等三角形拼成平行四邊形，理解公式中「除以 2」的幾何意義。</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <i class="fa-solid fa-check text-emerald-600 mt-1"></i>
-                            <span><strong>技能實作與敏捷心算：</strong>能運用 iPad 觸控手勢及滑桿操作 Canvas 幾何模型，並在限時 2 分鐘的極速挑戰中快速判斷底高對應與面積。</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <i class="fa-solid fa-check text-emerald-600 mt-1"></i>
-                            <span><strong>4F 後設認知與生態素養：</strong>將遊戲實測數據直接導入 4F 反思架構（Facts、Feelings、Findings、Future），思考人為直線切割界線對野生動物棲地的破碎化衝擊。</span>
-                        </li>
-                    </ul>
-                </div>
-
-                <!-- 第二大項：網頁操作說明 -->
-                <div class="bg-sky-50 p-5 rounded-2xl border-2 border-sky-200 space-y-3">
-                    <h4 class="text-xl md:text-2xl font-black text-sky-950 flex items-center gap-2">
-                        <i class="fa-solid fa-desktop text-sky-600"></i>二、網頁操作說明
-                    </h4>
-                    <ul class="space-y-2 text-base md:text-xl text-slate-800 font-bold leading-relaxed">
-                        <li><strong>頂部工具列：</strong>純圖示依序配置：① QR Code 掃碼分享（即時二維碼與網址複製）、② 全螢幕切換、③ 本課程設計說明。</li>
-                        <li><strong>活動一（農夫爭地）：</strong>閱讀故事衝突後，點擊按鈕預測阿基伯或山姆叔叔的土地面積。</li>
-                        <li><strong>活動二（圖形變身）：</strong>在 Canvas 畫布上手指水平拖曳剪裁直角三角形平移，或旋轉 180° 拼貼三角形。</li>
-                        <li><strong>活動三（領地挑戰賽 ➔ 4F 反思）：</strong>限時 2 分鐘答題，答錯 3 次終止。結束後系統將<strong>自動匯入戰績至 4F 反思表單</strong>，支援點擊快捷標籤一鍵生成反思心得。</li>
-                        <li><strong>活動四（成果展示牆）：</strong>直接公開呈現全班 4F 反思卡片與戰績，點擊「匯出成果圖檔 (PNG)」可直接下載高畫質成果照片。</li>
-                    </ul>
-                </div>
-
-                <!-- 第三大項：課堂提問建議 -->
-                <div class="bg-emerald-50 p-5 rounded-2xl border-2 border-emerald-200 space-y-3">
-                    <h4 class="text-xl md:text-2xl font-black text-emerald-950 flex items-center gap-2">
-                        <i class="fa-solid fa-comments text-emerald-600"></i>三、課堂提問建議
-                    </h4>
-                    <ul class="space-y-2 text-base md:text-xl text-slate-800 font-bold leading-relaxed">
-                        <li><strong>導入階段：</strong>「阿基伯與山姆叔叔的土地『底』和『高』完全一樣，形狀不同時，面積真的可能一樣大嗎？」</li>
-                        <li><strong>發展階段：</strong>「剪下來的直角三角形平移到另一側後，新長方形的長和寬對應到哪裡？」、「為什麼三角形公式最後一定要除以 2？」</li>
-                        <li><strong>4F 歸納階段：</strong>「看著剛才挑戰賽的客觀事實 (Facts)，哪一題最容易因為看錯斜邊而失誤 (Findings)？下次你打算採取什麼策略 (Future)？」</li>
-                    </ul>
-                </div>
-            </div>
-
-            <button onclick="closeModal('guideModal')" class="btn-touch w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xl font-extrabold py-3 rounded-2xl border-b-indigo-900 shadow-md">
-                關閉並開始探究
-            </button>
+    <!-- TAB 2: 2分鐘速答賽 (Speed Quiz Activity) -->
+    <div id="tabContentGame" class="hidden space-y-6">
+      
+      <!-- Quiz Header Banner -->
+      <div class="bg-white rounded-3xl p-4 sm:p-6 border-2 border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-14 h-14 rounded-2xl bg-rose-500 text-white flex items-center justify-center text-2xl shadow-lg shadow-rose-200 flex-shrink-0">
+            <i class="fa-solid fa-bolt-lightning"></i>
+          </div>
+          <div>
+            <h2 class="text-2xl sm:text-3xl font-black text-slate-800">幾何領地極速賽 (限時 2 分鐘)</h2>
+            <p class="text-slate-500 text-sm sm:text-base font-semibold">
+              題庫含 36 題隨機幾何挑戰！錯誤 3 次將觸發防線中斷並自動結算成績至 4F 反思！
+            </p>
+          </div>
         </div>
-    </div>
 
-    <!-- 自訂確認清除展示牆彈窗 (絕不使用原生 confirm) -->
-    <div id="confirmClearModal" onclick="onBackdropClick(event, 'confirmClearModal')" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full text-center space-y-6 shadow-2xl border-4 border-rose-200">
-            <i class="fa-solid fa-triangle-exclamation text-5xl text-rose-500"></i>
-            <h3 class="text-2xl font-black text-slate-900">確認清空成果展示牆？</h3>
-            <p class="text-lg font-bold text-slate-600">清空後所有已展示的小組 4F 反思、遊戲戰績與作品紀錄將重置歸零，此操作無法復原。</p>
-            
-            <div class="flex gap-4">
-                <button onclick="closeModal('confirmClearModal')" class="btn-touch w-1/2 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xl font-black py-3 rounded-2xl border-b-slate-400">
-                    取消
-                </button>
-                <button onclick="confirmClearShowcase()" class="btn-touch w-1/2 bg-rose-600 hover:bg-rose-700 text-white text-xl font-black py-3 rounded-2xl border-b-rose-900 shadow-md">
-                    確認清空
-                </button>
+        <!-- Life Hearts, Timer & Early Finish Button -->
+        <div class="flex flex-wrap items-center gap-3 sm:gap-5 bg-slate-50 px-4 sm:px-5 py-3 rounded-2xl border border-slate-200 self-stretch md:self-auto justify-around">
+          <!-- Life hearts -->
+          <div class="text-center">
+            <span class="block text-xs font-bold text-slate-400 uppercase">生命值</span>
+            <div id="gameHearts" class="flex items-center gap-1 text-2xl text-rose-500 mt-0.5">
+              <i class="fa-solid fa-heart"></i>
+              <i class="fa-solid fa-heart"></i>
+              <i class="fa-solid fa-heart"></i>
             </div>
+          </div>
+
+          <!-- Divider -->
+          <div class="w-px h-10 bg-slate-200"></div>
+
+          <!-- Countdown Timer (120s) -->
+          <div class="text-center">
+            <span class="block text-xs font-bold text-slate-400 uppercase">剩餘時間</span>
+            <div id="gameTimerText" class="text-2xl sm:text-3xl font-black text-slate-800 tracking-wider">
+              02:00
+            </div>
+          </div>
+
+          <!-- Divider -->
+          <div class="w-px h-10 bg-slate-200"></div>
+
+          <!-- Score -->
+          <div class="text-center">
+            <span class="block text-xs font-bold text-slate-400 uppercase">積分</span>
+            <div id="gameScoreText" class="text-2xl sm:text-3xl font-black text-emerald-600">
+              0
+            </div>
+          </div>
+
+          <!-- Early End Button -->
+          <button id="btnEarlyFinish" onclick="confirmEarlyFinish()" class="hidden text-xs bg-slate-200 hover:bg-rose-100 hover:text-rose-700 text-slate-600 font-bold px-3 py-2 rounded-xl border border-slate-300 transition-all">
+            提前結算
+          </button>
         </div>
+      </div>
+
+      <!-- Time Progress Bar -->
+      <div class="w-full bg-slate-200 h-3 rounded-full overflow-hidden shadow-inner">
+        <div id="gameProgressBar" class="bg-gradient-to-r from-emerald-500 via-amber-500 to-rose-500 h-full w-full transition-all duration-300 ease-linear"></div>
+      </div>
+
+      <!-- Game Stage Ready Screen -->
+      <div id="gameScreenReady" class="bg-white rounded-3xl p-8 sm:p-12 border-2 border-dashed border-slate-300 text-center space-y-6">
+        <div class="max-w-md mx-auto space-y-3">
+          <div class="w-20 h-20 rounded-full bg-emerald-100 text-emerald-600 text-4xl flex items-center justify-center mx-auto shadow-md">
+            <i class="fa-solid fa-flag-checkered"></i>
+          </div>
+          <h3 class="text-2xl sm:text-3xl font-black text-slate-800">準備好挑戰領地大解密了嗎？</h3>
+          <p class="text-slate-600 text-base leading-relaxed">
+            挑戰包含「平行四邊形面積」、「三角形公式推導」、「同底等高大小判定」與「生態綠廊思考」。
+            手腦並用，點擊下方按鈕立刻開始！
+          </p>
+        </div>
+
+        <button onclick="startGame()" class="touch-btn px-10 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-xl sm:text-2xl font-black shadow-xl shadow-emerald-200 active:scale-95 transition-all">
+          <i class="fa-solid fa-play mr-2"></i> 開始 2 分鐘挑戰
+        </button>
+      </div>
+
+      <!-- Active Game Question Area -->
+      <div id="gameScreenPlaying" class="hidden bg-white rounded-3xl p-5 sm:p-8 border-2 border-slate-200 shadow-lg space-y-6">
+        
+        <!-- Question Meta -->
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <span id="questionCategory" class="bg-emerald-100 text-emerald-800 text-xs sm:text-sm font-black px-3 py-1 rounded-full">
+            幾何觀念探索
+          </span>
+          <span id="questionCounter" class="text-slate-400 font-black text-sm">
+            第 1 / 36 題
+          </span>
+        </div>
+
+        <!-- Question Prompt -->
+        <div class="space-y-2">
+          <h3 id="questionText" class="text-xl sm:text-2xl md:text-3xl font-black text-slate-800 leading-snug">
+            題目文字載入中...
+          </h3>
+          <div id="questionHint" class="text-slate-500 text-sm sm:text-base font-semibold flex items-center gap-1.5">
+            <i class="fa-solid fa-lightbulb text-amber-500"></i>
+            <span>提示：請仔細確認底與高的對應關係！</span>
+          </div>
+        </div>
+
+        <!-- 4 Answer Options (Jumbo Buttons for iPad Touch) -->
+        <div id="optionsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 pt-2">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Question feedback toast -->
+        <div id="feedbackToast" class="hidden p-3.5 rounded-2xl text-center font-black text-base sm:text-lg">
+          <!-- Feedback message -->
+        </div>
+
+      </div>
+
+      <!-- Game Result Termination Modal / Screen -->
+      <div id="gameScreenFinished" class="hidden bg-white rounded-3xl p-6 sm:p-10 border-2 border-slate-200 shadow-xl text-center space-y-6">
+        <div class="w-20 h-20 rounded-full mx-auto flex items-center justify-center text-4xl shadow-md" id="finishIconBg">
+          <i id="finishIcon" class="fa-solid fa-trophy"></i>
+        </div>
+
+        <div class="space-y-2">
+          <h3 id="finishTitle" class="text-2xl sm:text-3xl font-black text-slate-800">
+            挑戰結束！
+          </h3>
+          <p id="finishReason" class="text-slate-600 text-base sm:text-lg">
+            時間到或是失誤已達上限。來看看你的精采戰績！
+          </p>
+        </div>
+
+        <!-- Summary Score Board -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl mx-auto">
+          <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <span class="text-xs font-bold text-slate-400 block">挑戰總題數</span>
+            <span id="statTotal" class="text-2xl font-black text-slate-800 mt-1 block">0</span>
+          </div>
+          <div class="bg-emerald-50 p-4 rounded-2xl border border-emerald-200">
+            <span class="text-xs font-bold text-emerald-600 block">答對題數</span>
+            <span id="statCorrect" class="text-2xl font-black text-emerald-600 mt-1 block">0</span>
+          </div>
+          <div class="bg-rose-50 p-4 rounded-2xl border border-rose-200">
+            <span class="text-xs font-bold text-rose-500 block">失誤次數</span>
+            <span id="statWrong" class="text-2xl font-black text-rose-500 mt-1 block">0</span>
+          </div>
+          <div class="bg-amber-50 p-4 rounded-2xl border border-amber-200">
+            <span class="text-xs font-bold text-amber-700 block">最終積分</span>
+            <span id="statScore" class="text-2xl font-black text-amber-600 mt-1 block">0</span>
+          </div>
+        </div>
+
+        <!-- Buttons to proceed to 4F -->
+        <div class="flex flex-wrap items-center justify-center gap-3 pt-4">
+          <button onclick="startGame()" class="touch-btn px-6 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-base active:scale-95">
+            <i class="fa-solid fa-rotate-right mr-1.5"></i> 再次挑戰
+          </button>
+          <button onclick="goToReflectionTab()" class="touch-btn px-8 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-lg shadow-lg shadow-indigo-200 active:scale-95">
+            <i class="fa-solid fa-file-export mr-2"></i> 將戰報套入 4F 反思成果牆
+          </button>
+        </div>
+
+      </div>
+
     </div>
 
-    <!-- 訊息提示 Toast 通知 -->
-    <div id="toast" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl text-xl font-bold hidden z-[100] flex items-center gap-3">
-        <i class="fa-solid fa-circle-check text-emerald-400"></i>
-        <span id="toastMsg">操作成功</span>
+    <!-- TAB 3: 4F 思考模式成果牆 (4F Reflection & Image Export) -->
+    <div id="tabContentRecord" class="hidden space-y-6">
+      
+      <!-- Top Actions Bar -->
+      <div class="bg-white rounded-3xl p-4 sm:p-6 border-2 border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+        <div>
+          <span class="bg-indigo-100 text-indigo-800 text-xs sm:text-sm font-black px-3 py-1 rounded-full uppercase">
+            <i class="fa-solid fa-brain mr-1"></i> 4F 焦點討論模式
+          </span>
+          <h2 class="text-2xl sm:text-3xl font-black text-slate-800 mt-1">個人學習反思與領地守護證書</h2>
+          <p class="text-slate-500 text-sm sm:text-base font-semibold">
+            系統已根據你剛才在實驗室的探究與極速賽成果，自動生成初步 4F 思考紀錄，可自行編輯補充！
+          </p>
+        </div>
+
+        <button onclick="exportResultImage()" class="touch-btn px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-base sm:text-lg font-black shadow-lg shadow-emerald-200 active:scale-95 transition-all">
+          <i class="fa-solid fa-file-image mr-2 text-xl"></i> 匯出成果為圖片檔 (PNG)
+        </button>
+      </div>
+
+      <!-- Printable / Exportable Certificate Container -->
+      <div id="certificateContainer" class="bg-gradient-to-b from-white to-slate-50 rounded-3xl p-6 sm:p-10 border-4 border-emerald-600/30 shadow-2xl relative">
+        
+        <!-- Watermark / Stamp -->
+        <div class="absolute top-6 right-6 opacity-15 sm:opacity-20 pointer-events-none">
+          <div class="w-32 h-32 rounded-full border-4 border-dashed border-emerald-800 flex items-center justify-center rotate-12 text-emerald-800 font-black text-xl">
+            數感核可標章
+          </div>
+        </div>
+
+        <!-- Certificate Header -->
+        <div class="border-b-2 border-slate-200 pb-6 text-center space-y-2">
+          <div class="flex items-center justify-center gap-2 text-emerald-700 font-bold text-sm sm:text-base">
+            <i class="fa-solid fa-award"></i>
+            <span>數感實驗室 校訂課程探究認證卡</span>
+          </div>
+          <h3 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+            幾何領地探究認證書
+          </h3>
+          <div class="flex flex-wrap items-center justify-center gap-4 text-sm sm:text-base font-bold text-slate-600 pt-2">
+            <span>學員身分：<strong id="certStudentInfo" class="text-emerald-700 font-black">五年一班 28號 野比大雄</strong></span>
+            <span>認證單元：<strong class="text-slate-800">消失的領地(一)</strong></span>
+            <span>認證日期：<strong id="certDate" class="text-slate-800">2026/09/26</strong></span>
+          </div>
+        </div>
+
+        <!-- Stats Chips Banner -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 my-6">
+          <div class="bg-white p-3.5 rounded-2xl border border-slate-200 text-center shadow-sm">
+            <span class="text-xs font-bold text-slate-400 block">挑戰賽積分</span>
+            <span id="certScore" class="text-2xl font-black text-emerald-600 mt-0.5">0 分</span>
+          </div>
+          <div class="bg-white p-3.5 rounded-2xl border border-slate-200 text-center shadow-sm">
+            <span class="text-xs font-bold text-slate-400 block">答對率</span>
+            <span id="certAccuracy" class="text-2xl font-black text-blue-600 mt-0.5">0%</span>
+          </div>
+          <div class="bg-white p-3.5 rounded-2xl border border-slate-200 text-center shadow-sm">
+            <span class="text-xs font-bold text-slate-400 block">剪拼長方形</span>
+            <span id="certCutSuccess" class="text-2xl font-black text-amber-600 mt-0.5">已驗證</span>
+          </div>
+          <div class="bg-white p-3.5 rounded-2xl border border-slate-200 text-center shadow-sm">
+            <span class="text-xs font-bold text-slate-400 block">全等合體</span>
+            <span id="certTriSuccess" class="text-2xl font-black text-indigo-600 mt-0.5">已完成</span>
+          </div>
+        </div>
+
+        <!-- 4F Quadrant Sections -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          
+          <!-- 1. Facts 客觀事實 -->
+          <div class="bg-white rounded-2xl p-5 border-2 border-blue-200 shadow-sm space-y-2">
+            <div class="flex items-center gap-2">
+              <span class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-black text-sm">
+                F1
+              </span>
+              <h4 class="font-black text-lg text-blue-950">[Facts 客觀事實] 我看見與操作了什麼？</h4>
+            </div>
+            <p class="text-xs text-slate-500 font-semibold">
+              今天我們嘗試將平行四邊形與三角形轉化成哪種幾何形狀？數據如何？
+            </p>
+            <textarea id="input4FFacts" rows="3" class="w-full text-base font-semibold text-slate-800 bg-slate-50 p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-400 leading-relaxed" placeholder="輸入客觀事實..."></textarea>
+          </div>
+
+          <!-- 2. Feelings 感受反應 -->
+          <div class="bg-white rounded-2xl p-5 border-2 border-rose-200 shadow-sm space-y-2">
+            <div class="flex items-center gap-2">
+              <span class="w-8 h-8 rounded-lg bg-rose-600 text-white flex items-center justify-center font-black text-sm">
+                F2
+              </span>
+              <h4 class="font-black text-lg text-rose-950">[Feelings 感受反應] 我的心情與體驗</h4>
+            </div>
+            <p class="text-xs text-slate-500 font-semibold">
+              當你親手把圖形剪拼補齊，或是在2分鐘速答賽闖關時，你有什麼樣的感受？
+            </p>
+            <textarea id="input4FFeelings" rows="3" class="w-full text-base font-semibold text-slate-800 bg-slate-50 p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-400 leading-relaxed" placeholder="輸入感受心情..."></textarea>
+          </div>
+
+          <!-- 3. Findings 發現收穫 -->
+          <div class="bg-white rounded-2xl p-5 border-2 border-amber-200 shadow-sm space-y-2">
+            <div class="flex items-center gap-2">
+              <span class="w-8 h-8 rounded-lg bg-amber-600 text-white flex items-center justify-center font-black text-sm">
+                F3
+              </span>
+              <h4 class="font-black text-lg text-amber-950">[Findings 發現收穫] 我的數學規律與思辨</h4>
+            </div>
+            <p class="text-xs text-slate-500 font-semibold">
+              觀察平行四邊形與三角形面積公式，有什麼共同特徵？直線劃分土地對生態有何影響？
+            </p>
+            <textarea id="input4FFindings" rows="3" class="w-full text-base font-semibold text-slate-800 bg-slate-50 p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-400 leading-relaxed" placeholder="輸入幾何與生態發現..."></textarea>
+          </div>
+
+          <!-- 4. Future 未來應用 -->
+          <div class="bg-white rounded-2xl p-5 border-2 border-emerald-200 shadow-sm space-y-2">
+            <div class="flex items-center gap-2">
+              <span class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-black text-sm">
+                F4
+              </span>
+              <h4 class="font-black text-lg text-emerald-950">[Future 未來應用] 下一次遇到問題如何行動？</h4>
+            </div>
+            <p class="text-xs text-slate-500 font-semibold">
+              下次遇到更複雜的圖形（如梯形或五邊形），或是規劃校園綠帶時，你會怎麼做？
+            </p>
+            <textarea id="input4FFuture" rows="3" class="w-full text-base font-semibold text-slate-800 bg-slate-50 p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-400 leading-relaxed" placeholder="輸入未來應用方案..."></textarea>
+          </div>
+
+        </div>
+
+      </div>
+
     </div>
 
-    <script>
-        /* 全局學習歷程與展示清單狀態 (預設數據全部歸零清空) */
-        let currentPrediction = "";
-        let isParaDone = false;
-        let isTriDone = false;
-        let showcaseWorks = [];
-        let toastTimeout = null;
+  </main>
 
-        // Canvas 畫布全域變數
-        let canvas1, ctx1, canvas2, ctx2;
-        let paraProgress = 0;      // 0 to 100
-        let triAngleProgress = 0;  // 0 to 180
-        let paraAnimId = null;
-        let triAnimId = null;
+  <!-- Modal 1: 課程設計說明 (Course Guide Modal) -->
+  <div id="modalGuide" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-3 sm:p-6" onclick="handleModalBackdropClick(event, 'modalGuide')">
+    <div class="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto border-2 border-slate-200 shadow-2xl flex flex-col" onclick="event.stopPropagation()">
+      
+      <!-- Modal Header -->
+      <div class="sticky top-0 bg-white/95 backdrop-blur-md px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center text-lg">
+            <i class="fa-solid fa-book-open"></i>
+          </div>
+          <h3 class="text-xl sm:text-2xl font-black text-slate-800">課程設計說明</h3>
+        </div>
+        <button onclick="closeGuideModal()" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-xl transition-all" aria-label="關閉說明">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
 
-        // 觸控手勢拖曳狀態變數
-        let isDraggingCanvas1 = false;
-        let isDraggingCanvas2 = false;
-        let lastTouchX = 0;
+      <!-- Modal Body (3 Required Categories) -->
+      <div class="p-6 space-y-6">
+        
+        <!-- 1. 學習目標 -->
+        <section class="space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-black text-sm">1</span>
+            <h4 class="text-lg font-black text-emerald-950">學習目標</h4>
+          </div>
+          <div class="bg-emerald-50 rounded-2xl p-4 border border-emerald-200 space-y-2 text-emerald-950 text-sm sm:text-base leading-relaxed">
+            <p><strong>• 知識層面：</strong>學生能理解平行四邊形面積公式為「底×高」，以及三角形面積公式為「底×高÷2」的幾何由來（對應108課綱【s-Ⅲ-5】、【S-5-2】）。</p>
+            <p><strong>• 能力層面：</strong>能透過滑動平移與旋轉重組，驗證割補轉化長方形的面積守恆性，並在極速挑戰中靈活識別互相垂直之對應底高。</p>
+            <p><strong>• 態度與議題：</strong>能從人為土地劃分省思野生動物棲地破碎化的問題，建立尊重自然與生態綠廊規劃的環境永續意識（融入【環E3】與SDGs 15陸地生態）。</p>
+          </div>
+        </section>
 
-        // 領地挑戰賽遊戲狀態 (2分鐘，錯3次終止)
-        let gameTimeLeft = 120; // 2 分鐘 (120 秒)
-        let gameTimerInterval = null;
-        let gameMistakes = 0;   // 累積錯誤次數 (上限 3 次)
-        let gameScore = 0;
-        let gameCorrectCount = 0;
-        let gameCombo = 0;
-        let gameCurrentQIndex = 0;
-        let gameActiveQuestion = null;
-        let isGameRunning = false;
+        <!-- 2. 網頁操作說明 -->
+        <section class="space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-black text-sm">2</span>
+            <h4 class="text-lg font-black text-blue-950">網頁操作說明</h4>
+          </div>
+          <div class="bg-blue-50 rounded-2xl p-4 border border-blue-200 space-y-2 text-blue-950 text-sm sm:text-base leading-relaxed">
+            <p><strong>• 探究實驗室：</strong>切換上方三個模式，拖動底部「轉化進度滑桿」即可觀察直角三角形剪拼長方形、或是兩張三角形合成平行四邊形的動態過程。</p>
+            <p><strong>• 2分鐘極速賽：</strong>點擊開始後進入120秒倒數，答錯達3次會自動提前結算，支援iPad大觸控選項直接點選。</p>
+            <p><strong>• 4F思考模式與圖檔匯出：</strong>測驗結束後系統會自動轉化數據至成果牆，確認內容後點選「匯出成果為圖片檔 (PNG)」即可存檔或分享給教師。</p>
+          </div>
+        </section>
 
-        // 幾何領域精選題庫 (36 題全覆蓋)
-        const gameQuestions = [
-            {
-                q: "阿基伯的土地是平行四邊形，底 10 公尺、高 6 公尺，請問面積是多少平方公尺？",
-                options: ["60 平方公尺", "30 平方公尺", "16 平方公尺", "120 平方公尺"],
-                ans: 0,
-                hint: "平行四邊形面積 = 底 × 高 = 10 × 6 = 60 平方公尺。"
-            },
-            {
-                q: "山姆叔叔的土地是三角形，底 10 公尺、高 6 公尺，請問面積是多少平方公尺？",
-                options: ["30 平方公尺", "60 平方公尺", "15 平方公尺", "20 平方公尺"],
-                ans: 0,
-                hint: "三角形面積 = 底 × 高 ÷ 2 = 10 × 6 ÷ 2 = 30 平方公尺。"
-            },
-            {
-                q: "為什麼同底同高的三角形面積，剛好是平行四邊形面積的「一半」？",
-                options: [
-                    "因為兩個全等的三角形旋轉後可拼成一個平行四邊形",
-                    "因為三角形只有三個邊，所以要除以 2",
-                    "因為三角形的高比較短",
-                    "因為長方形的面積是三角形的四倍"
-                ],
-                ans: 0,
-                hint: "兩個全等的三角形旋轉 180° 後可以拼成同底同高的平行四邊形，因此單個面積必須除以 2。"
-            },
-            {
-                q: "一個三角形面積為 24 平方公分，已知底為 8 公分，請問對應的高是多少公分？",
-                options: ["6 公分", "3 公分", "12 公分", "4 公分"],
-                ans: 0,
-                hint: "面積 × 2 ÷ 底 = 高，24 × 2 ÷ 8 = 6 公分。"
-            },
-            {
-                q: "一個平行四邊形面積為 48 平方公尺，高為 6 公尺，請問它的底是多少公尺？",
-                options: ["8 公尺", "16 公尺", "4 公尺", "12 公尺"],
-                ans: 0,
-                hint: "平行四邊形 底 = 面積 ÷ 高 = 48 ÷ 6 = 8 公尺。"
-            },
-            {
-                q: "阿基伯把平行四邊形沿著「高」剪下一個直角三角形，平移後會拼成什麼形狀？",
-                options: ["長方形", "正三角形", "梯形", "五邊形"],
-                ans: 0,
-                hint: "剪下的直角三角形平移至另一側，正好補齊凹角拼成長方形。"
-            },
-            {
-                q: "直角三角形的兩條直角邊分別長 6 公分與 8 公分，請問此三角形面積是多少？",
-                options: ["24 平方公分", "48 平方公分", "14 平方公分", "28 平方公分"],
-                ans: 0,
-                hint: "直角三角形的兩直角邊互為底與高：(6 × 8) ÷ 2 = 24 平方公分。"
-            },
-            {
-                q: "如果把一個平行四邊形的「底」變成原本的 2 倍，高保持不變，面積會變成原來的幾倍？",
-                options: ["2 倍", "4 倍", "不變", "一半"],
-                ans: 0,
-                hint: "面積 = 底 × 高，當底增加為 2 倍且高不變時，面積也放大為 2 倍。"
-            },
-            {
-                q: "在生態保育中，如果在森林中為了劃分土地拉設筆直的鐵絲圍籬，會帶來什麼影響？",
-                options: [
-                    "造成棲地破碎化，阻斷野生動物遷徙與覓食路徑",
-                    "讓動物有更多安全的房間可以住",
-                    "增加野生動物的數量",
-                    "沒有任何影響"
-                ],
-                ans: 0,
-                hint: "人為直線界線常使野生動物棲地破碎，影響覓食、繁衍與遷徙安全。"
-            },
-            {
-                q: "兩個面積相等的三角形，它們的「底」和「高」一定要長得一模一樣嗎？",
-                options: [
-                    "不一定，只要「底 × 高」的乘積相等即可",
-                    "一定都要一模一樣才能面積相等",
-                    "只有正三角形才可能面積相等",
-                    "必須都是直角三角形"
-                ],
-                ans: 0,
-                hint: "例如底 4 高 6 與 底 3 高 8，乘積都是 24，計算後的面積皆為 12 平方單位。"
-            },
-            {
-                q: "鈍角三角形中，有些高會落在圖形的「外部」，這條外部高必須垂直於哪裡？",
-                options: [
-                    "底邊向外延伸的虛線上",
-                    "鈍角所在的斜邊上",
-                    "三角形內部的重心點",
-                    "另一條邊的中點"
-                ],
-                ans: 0,
-                hint: "鈍角三角形的外部高必須從頂點出發，垂直落於底邊延長的虛線上。"
-            },
-            {
-                q: "一個三角形如果「底」變為原來的 2 倍，「高」也變為原來的 2 倍，面積會變成原來的幾倍？",
-                options: ["4 倍", "2 倍", "8 倍", "6 倍"],
-                ans: 0,
-                hint: "新面積 = (2底 × 2高) ÷ 2 = 4 × (底 × 高 ÷ 2)，因此面積放大為 4 倍。"
-            },
-            {
-                q: "一個長方形長 12 公分、寬 5 公分，沿著對角線剪開成兩個全等三角形，其中一個三角形的面積是多少？",
-                options: ["30 平方公分", "60 平方公分", "17 平方公分", "15 平方公分"],
-                ans: 0,
-                hint: "長方形面積 12 × 5 = 60，對角線將其分為兩個全等三角形，60 ÷ 2 = 30 平方公分。"
-            },
-            {
-                q: "兩個同底且等高的平行四邊形，一個形狀很傾斜、另一個很端正，請問哪一個面積比較大？",
-                options: ["兩者面積一樣大", "比較傾斜的面積較大", "比較端正的面積較大", "無法比較"],
-                ans: 0,
-                hint: "平行四邊形面積只由「底」和「高」決定，同底等高的平行四邊形面積必完全相等。"
-            },
-            {
-                q: "計算平行四邊形面積時，題目給了：底邊長 15 公分、對應高 8 公分、斜邊長 10 公分，正確的算式是？",
-                options: ["15 × 8 = 120", "15 × 10 = 150", "10 × 8 = 80", "(15 × 8) ÷ 2 = 60"],
-                ans: 0,
-                hint: "平行四邊形面積是「底 × 高」，斜邊不是垂直距離，絕不能拿來當作高！"
-            },
-            {
-                q: "一塊三角形菜地的底是 16 公尺，高是 10 公尺，請問這塊菜地的面積是多少平方公尺？",
-                options: ["80 平方公尺", "160 平方公尺", "26 平方公尺", "40 平方公尺"],
-                ans: 0,
-                hint: "三角形面積 = 底 × 高 ÷ 2 = 16 × 10 ÷ 2 = 80 平方公尺。"
-            },
-            {
-                q: "將兩個一模一樣的全等梯形上下顛倒拼貼，可以無縫拼成什麼幾何圖形？",
-                options: ["平行四邊形", "長方形", "正三角形", "正六邊形"],
-                ans: 0,
-                hint: "兩個全等梯形倒置拼合後，兩組對邊分別等長且平行，會形成一個大的平行四邊形。"
-            },
-            {
-                q: "一個三角形的面積是 35 平方公分，若它的高是 7 公分，請問對應的底是多少公分？",
-                options: ["10 公分", "5 公分", "2.5 公分", "14 公分"],
-                ans: 0,
-                hint: "底 = 面積 × 2 ÷ 高 = 35 × 2 ÷ 7 = 10 公分。"
-            },
-            {
-                q: "一塊平行四邊形草坪底長 20 公尺，高為 15 公尺，這塊草坪的面積是多少公畝？",
-                options: ["3 公畝 (300 平方公尺)", "30 公畝", "0.3 公畝", "300 公畝"],
-                ans: 0,
-                hint: "面積 = 20 × 15 = 300 平方公尺。因為 100 平方公尺 = 1 公畝，所以是 3 公畝。"
-            },
-            {
-                q: "任意一個三角形中，總共可以畫出幾條不同的「高」？",
-                options: ["3 條", "1 條", "2 條", "無限多條"],
-                ans: 0,
-                hint: "三角形有三個頂點與三條邊，每個頂點對應對邊都可以畫出一條垂直的高，共 3 條。"
-            },
-            {
-                q: "一張邊長 12 公分的正方形色紙，沿著兩條對角線剪成 4 個全等的三角形，每個三角形面積是多少？",
-                options: ["36 平方公分", "72 平方公分", "24 平方公分", "18 平方公分"],
-                ans: 0,
-                hint: "正方形面積 = 12 × 12 = 144 平方公分，平分成 4 等份：144 ÷ 4 = 36 平方公分。"
-            },
-            {
-                q: "為了減少道路開發對野生動物棲息地的切割破壞，生態學家常建議建造什麼設施？",
-                options: [
-                    "生態廊道（動物陸橋或地下涵洞）",
-                    "更高更長的水泥圍牆",
-                    "更多高速收費站",
-                    "大規模伐木圍籬"
-                ],
-                ans: 0,
-                hint: "生態廊道能跨越人為切割障礙，重新連結兩側破碎棲地，供野生動物安全通行。"
-            },
-            {
-                q: "一個平行四邊形的面積是 72 平方公尺，高是 8 公尺，如果把底增加 3 公尺且高不變，新面積是多少？",
-                options: ["96 平方公尺", "80 平方公尺", "120 平方公尺", "108 平方公尺"],
-                ans: 0,
-                hint: "原本底 = 72 ÷ 8 = 9 公尺。新底 = 9 + 3 = 12 公尺。新面積 = 12 × 8 = 96 平方公尺。"
-            },
-            {
-                q: "等腰直角三角形的兩條直角邊各長 10 公分，請問此三角形的面積是多少？",
-                options: ["50 平方公分", "100 平方公分", "25 平方公分", "20 平方公分"],
-                ans: 0,
-                hint: "兩直角邊互為底與高：(10 × 10) ÷ 2 = 50 平方公分。"
-            },
-            {
-                q: "小明說：「只要兩個三角形的周長相同，它們的面積就一定會相等。」這句話正確嗎？",
-                options: [
-                    "不正確，周長相同的圖形，高與底的乘積不一定相同",
-                    "正確，周長相等面積必定相等",
-                    "只有在等邊三角形才不正確",
-                    "只有在直角三角形才正確"
-                ],
-                ans: 0,
-                hint: "周長代表邊界長度，面積代表涵蓋面大小；周長相同時，底和高的組合乘積可能差異很大。"
-            },
-            {
-                q: "一座平行四邊形農地底是 14 公尺、高是 6 公尺；山姆叔叔的三角形農地底也是 14 公尺、高也是 6 公尺，兩者面積相差多少？",
-                options: ["42 平方公尺", "84 平方公尺", "21 平方公尺", "0 平方公尺"],
-                ans: 0,
-                hint: "平行四邊形 = 14 × 6 = 84；三角形 = 84 ÷ 2 = 42。相差 84 - 42 = 42 平方公尺。"
-            },
-            {
-                q: "關於幾何圖形中的「底」與「高」，下列敘述何者完全正確？",
-                options: [
-                    "底與高必須是互相垂直的關係",
-                    "底一定只能是水平放著的那條線",
-                    "高一定會比底的長度還要短",
-                    "斜邊一定不能當作三角形的底"
-                ],
-                ans: 0,
-                hint: "幾何定義中，高是頂點到對邊（或其延長線）的垂直線段，因此底與高必須垂直。"
-            },
-            {
-                q: "一塊三角形看板底為 18 公尺、高為 5 公尺，若粉刷費用每平方公尺 50 元，全部粉刷需多少元？",
-                options: ["2250 元", "4500 元", "900 元", "1800 元"],
-                ans: 0,
-                hint: "面積 = (18 × 5) ÷ 2 = 45 平方公尺。費用 = 45 × 50 = 2250 元。"
-            },
-            {
-                q: "一個三角形的底長 8 公分，高長 12 公分。如果將「高」縮短為原本的一半，新面積會變成多少？",
-                options: ["24 平方公分", "48 平方公分", "12 平方公分", "36 平方公分"],
-                ans: 0,
-                hint: "原本面積 = (8 × 12) ÷ 2 = 48 平方公分。高減半則面積也減半：48 ÷ 2 = 24 平方公分。"
-            },
-            {
-                q: "阿基伯有塊平行四邊形土地（底 12 公尺、高 5 公尺），山姆叔叔有塊三角形土地（底 24 公尺、高 5 公尺），誰的面積較大？",
-                options: [
-                    "兩個人一樣大！(皆為 60 平方公尺)",
-                    "阿基伯的土地比較大",
-                    "山姆叔叔的土地比較大",
-                    "無法計算比較"
-                ],
-                ans: 0,
-                hint: "阿基伯 = 12 × 5 = 60 平方公尺；山姆叔叔 = (24 × 5) ÷ 2 = 60 平方公尺，兩人土地面積相同！"
-            },
-            {
-                q: "一個三角形的面積是 54 平方公分，已知底長是 12 公分，請問這條底對應的高是多少公分？",
-                options: ["9 公分", "4.5 公分", "18 公分", "6 公分"],
-                ans: 0,
-                hint: "高 = 面積 × 2 ÷ 底 = 54 × 2 ÷ 12 = 9 公分。"
-            },
-            {
-                q: "平行四邊形沿著高剪開後平移成「長方形」，在此轉化過程中，什麼要素保持不變？",
-                options: [
-                    "面積與底、高完全不變",
-                    "只有周長不變",
-                    "只有形狀不變",
-                    "高變成了原本的兩倍"
-                ],
-                ans: 0,
-                hint: "剪下平移屬於等積變形，圖形的總面積、底長與高度皆完全維持不變。"
-            },
-            {
-                q: "一個平行四邊形的底是 9 公分，高是 4 公分。如果將底擴大為 3 倍，高不變，新面積是多少？",
-                options: ["108 平方公分", "36 平方公分", "72 平方公分", "144 平方公分"],
-                ans: 0,
-                hint: "原面積 = 9 × 4 = 36 平方公分。底變 3 倍則面積放大 3 倍：36 × 3 = 108 平方公分。"
-            },
-            {
-                q: "在野生動物調查中，如果一塊保護區被公路一分為二，對大體型哺乳動物的主要危害是什麼？",
-                options: [
-                    "活動領域破碎縮小，基因交流減少且易發生路殺",
-                    "讓動物更容易捕獲獵物",
-                    "動物能跑得更快更健康",
-                    "沒有任何不良危害"
-                ],
-                ans: 0,
-                hint: "道路切割造成棲地破碎，不僅導致動物面臨路殺威脅，還會阻礙族群基因交流。"
-            },
-            {
-                q: "一個直角三角形的兩直角邊為 5 公分與 12 公分，斜邊為 13 公分，請問斜邊上的高是多少公分？",
-                options: ["約 4.62 公分 (60/13 公分)", "5 公分", "6 公分", "2.5 公分"],
-                ans: 0,
-                hint: "面積 = (5 × 12) ÷ 2 = 30 平方公分。斜邊上的高 = 30 × 2 ÷ 13 = 60/13 ≈ 4.62 公分。"
-            },
-            {
-                q: "兩個全等的鈍角三角形，旋轉拼成一個平行四邊形後，這個平行四邊形的底和高與原鈍角三角形有何關係？",
-                options: [
-                    "底與高完全相同",
-                    "底變成了兩倍",
-                    "高變成了兩倍",
-                    "底和高都減半"
-                ],
-                ans: 0,
-                hint: "拼成平行四邊形時，底與高皆與原三角形完全相等，因此單個三角形面積即為平行四邊形除以 2。"
-            }
-        ];
+        <!-- 3. 課堂提問建議 -->
+        <section class="space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-lg bg-amber-600 text-white flex items-center justify-center font-black text-sm">3</span>
+            <h4 class="text-lg font-black text-amber-950">課堂提問建議 (引導提問)</h4>
+          </div>
+          <div class="bg-amber-50 rounded-2xl p-4 border border-amber-200 space-y-2 text-amber-950 text-sm sm:text-base leading-relaxed">
+            <p><strong>• [導入追問]：</strong>「如果阿明和阿豪的底與高都一樣，為什麼三角形的面積剛好是平行四邊形的一半？有哪張圖可以證明？」</p>
+            <p><strong>• [迷思破解]：</strong>「平行四邊形一定要沿著『垂直高』剪開嗎？如果沿著斜邊剪開，能不能拼成長方形？」</p>
+            <p><strong>• [跨域連結]：</strong>「當我們用直線鐵絲網分割農場時，森林裡的野生動物會遇到什麼困難？我們可以在兩塊地之間留下什麼？」</p>
+          </div>
+        </section>
 
-        // Fisher-Yates 洗牌演算法
-        function shuffleArray(arr) {
-            for (let i = arr.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [arr[i], arr[j]] = [arr[j], arr[i]];
-            }
-            return arr;
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-4 bg-slate-50 border-t border-slate-200 text-right">
+        <button onclick="closeGuideModal()" class="touch-btn px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-black text-base">
+          我知道了
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Modal 2: 動態 QR Code 視窗 (含即時網址預覽與備用一鍵複製) -->
+  <div id="modalQr" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4" onclick="handleModalBackdropClick(event, 'modalQr')">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 text-center space-y-5 border-2 border-slate-200 shadow-2xl" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-qrcode text-emerald-600 text-xl"></i>
+          <h3 class="text-xl font-black text-slate-800">iPad 相機掃碼開啟</h3>
+        </div>
+        <button onclick="closeQrModal()" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- QR Canvas Mount -->
+      <div class="flex justify-center p-3 bg-white rounded-2xl border-2 border-slate-100 shadow-inner">
+        <div id="qrCanvasContainer" class="flex items-center justify-center min-h-[190px] min-w-[190px]"></div>
+      </div>
+
+      <div class="space-y-1.5 text-left">
+        <label for="qrUrlInput" class="text-xs font-bold text-slate-500">目前網頁網址：</label>
+        <input id="qrUrlInput" type="text" readonly class="w-full text-xs font-mono bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-700 select-all" />
+      </div>
+
+      <p class="text-xs text-slate-500 font-semibold">
+        請使用 iPad 內建相機對準上方二維碼直接開啟本學習系統
+      </p>
+
+      <!-- One-click Copy Button Backup -->
+      <div class="space-y-2 pt-1">
+        <button onclick="copyCurrentUrl()" class="touch-btn w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black text-base shadow-md active:scale-95 transition-all">
+          <i class="fa-solid fa-copy mr-2"></i> 一鍵複製網址 (備用功能)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: iPad 專屬成果圖長按儲存預覽視窗 -->
+  <div id="modalPreview" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm hidden flex items-center justify-center p-3 sm:p-6" onclick="handleModalBackdropClick(event, 'modalPreview')">
+    <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[92vh] overflow-y-auto p-5 sm:p-6 text-center space-y-4 border-2 border-slate-200 shadow-2xl" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between border-b pb-3">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-circle-check text-emerald-600 text-xl"></i>
+          <h3 class="text-lg sm:text-xl font-black text-slate-800">證書匯出完成！</h3>
+        </div>
+        <button onclick="closePreviewModal()" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-xs sm:text-sm font-bold text-amber-900">
+        💡 <strong>iPad 學員提示：</strong>除自動下載外，您也可以<strong>長按下方圖片 ➔ 選擇「加入照片」</strong>儲存至相簿！
+      </div>
+
+      <div class="rounded-2xl border-2 border-slate-200 overflow-hidden shadow-md">
+        <img id="previewImageTag" src="" alt="4F證書預覽" class="w-full h-auto block" />
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-2">
+        <button onclick="closePreviewModal()" class="touch-btn px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm">
+          完成關閉
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global High-Priority Toast Notification (z-[100]) -->
+  <div id="globalToast" class="fixed top-20 left-1/2 -translate-x-1/2 z-[100] hidden bg-slate-950/90 text-white text-base font-black px-6 py-3 rounded-2xl shadow-2xl border border-emerald-500/50 backdrop-blur-md transition-all flex items-center gap-2.5">
+    <i id="globalToastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+    <span id="globalToastMsg">訊息提示</span>
+  </div>
+
+  <!-- Hidden Canvas for PNG Certificate Generation -->
+  <canvas id="hiddenCertCanvas" width="1200" height="920" class="hidden"></canvas>
+
+  <!-- Strict Footer (Requirement 11) -->
+  <footer class="w-full bg-white border-t border-slate-200 py-3 text-center">
+    <p class="text-sm sm:text-base font-bold text-slate-500">
+      數感實驗室  | 互動學習系統 | Design：S.C. Kuo
+    </p>
+  </footer>
+
+  <!-- ================= JAVASCRIPT LOGIC ================= -->
+  <script>
+    // System constant definition
+    const APP_VERSION = "v1.4.0";
+
+    // Native Web Audio API Sound Synthesizer (No external audio files needed)
+    class SoundFX {
+      constructor() {
+        this.ctx = null;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume().catch(() => {});
+        }
+      }
+      playCorrect() {
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523.25, now); // C5
+        osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.15); // G5
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      }
+      playWrong() {
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(220, now); // A3
+        osc.frequency.linearRampToValueAtTime(140, now + 0.2);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      }
+      playFinish() {
+        this.init();
+        if (!this.ctx) return;
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        notes.forEach((freq, idx) => {
+          const now = this.ctx.currentTime + idx * 0.12;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.35);
+        });
+      }
+    }
+    const sfx = new SoundFX();
+
+    // 36 Comprehensive Geometry & Ecology Questions (Grade 5)
+    const QUESTION_BANK = [
+      {
+        cat: "幾何公式",
+        q: "平行四邊形的面積公式是什麼？",
+        options: ["底 × 高", "底 × 高 ÷ 2", "邊長 × 4", "(上底＋下底) × 高"],
+        ans: 0,
+        hint: "剪拼後會轉化成一個長方形，長方形面積是長乘寬。"
+      },
+      {
+        cat: "幾何公式",
+        q: "三角形的面積公式是什麼？",
+        options: ["底 × 高 ÷ 2", "底 × 高", "底 ＋ 高", "邊長 × 邊長"],
+        ans: 0,
+        hint: "兩個全等三角形可以拼成一個同底同高的平行四邊形。"
+      },
+      {
+        cat: "認知衝突",
+        q: "若一塊平行四邊形土地與一塊三角形土地的「底和高都相同」，誰的面積比較大？",
+        options: ["平行四邊形面積大（是三角形的2倍）", "三角形面積大", "兩塊土地一樣大", "無法比較"],
+        ans: 0,
+        hint: "平行四邊形是 底×高，三角形是 底×高÷2。"
+      },
+      {
+        cat: "割補推導",
+        q: "把平行四邊形剪開拼成長方形時，必須沿著圖形的哪裡剪開？",
+        options: ["垂直的「高」", "任意的斜邊", "角平分線", "周長的一半"],
+        ans: 0,
+        hint: "長方形的四個角都是直角，因此一定要沿著垂直的「高」剪開！"
+      },
+      {
+        cat: "割補推導",
+        q: "平行四邊形剪拼成長方形後，原本的「底」和「高」分別變成長方形的什麼？",
+        options: ["長和寬", "周長和面積", "兩條對角線", "斜邊和直角"],
+        ans: 0,
+        hint: "原本水平的底就是長方形的長，垂直高就是寬。"
+      },
+      {
+        cat: "公式推理",
+        q: "三角形面積公式中，為什麼要「除以 2」？",
+        options: ["兩個全等三角形可拼成一個平行四邊形", "因為三角形有三個角", "因為底邊被切成一半", "因為高只有一半"],
+        ans: 0,
+        hint: "拿兩張一模一樣的三角形轉一轉，剛好合成平行四邊形。"
+      },
+      {
+        cat: "數值計算",
+        q: "一塊平行四邊形農田的底是 8 公尺、高是 5 公尺，面積是多少平方公尺？",
+        options: ["40 平方公尺", "20 平方公尺", "26 平方公尺", "80 平方公尺"],
+        ans: 0,
+        hint: "面積 ＝ 底 × 高 ＝ 8 × 5。"
+      },
+      {
+        cat: "數值計算",
+        q: "一塊三角形菜園的底是 8 公尺、高是 5 公尺，面積是多少平方公尺？",
+        options: ["20 平方公尺", "40 平方公尺", "13 平方公尺", "80 平方公尺"],
+        ans: 0,
+        hint: "面積 ＝ 底 × 高 ÷ 2 ＝ 8 × 5 ÷ 2。"
+      },
+      {
+        cat: "數值計算",
+        q: "一塊三角形土地的底是 12 公尺、高是 6 公尺，面積是多少平方公尺？",
+        options: ["36 平方公尺", "72 平方公尺", "18 平方公尺", "54 平方公尺"],
+        ans: 0,
+        hint: "12 × 6 ÷ 2 ＝ 36。"
+      },
+      {
+        cat: "逆向求值",
+        q: "已知一個平行四邊形的面積是 36 平方公分，若底是 9 公分，高是多少公分？",
+        options: ["4 公分", "2 公分", "18 公分", "8 公分"],
+        ans: 0,
+        hint: "高 ＝ 面積 ÷ 底 ＝ 36 ÷ 9。"
+      },
+      {
+        cat: "逆向求值",
+        q: "已知一個三角形的面積是 24 平方公分，若底是 8 公分，高是多少公分？",
+        options: ["6 公分", "3 公分", "12 公分", "16 公分"],
+        ans: 0,
+        hint: "三角形的高 ＝ 面積 × 2 ÷ 底 ＝ 24 × 2 ÷ 8。"
+      },
+      {
+        cat: "圖形性質",
+        q: "兩張形狀完全相同的全等三角形，一定能拼成下列哪種圖形？",
+        options: ["平行四邊形", "梯形", "圓形", "正五邊形"],
+        ans: 0,
+        hint: "將其中一張旋轉 180 度貼合對應邊即可拼成。"
+      },
+      {
+        cat: "迷思破除",
+        q: "「只要面積相等的兩個三角形，就一定能拼成平行四邊形」，這句話正確嗎？",
+        options: ["不正確，必須是形狀大小全等的三角形", "正確，面積一樣就能拼", "只有直角三角形可以", "無法確定"],
+        ans: 0,
+        hint: "如果形狀不同（比如一個鈍角、一個銳角），邊長貼合不上。"
+      },
+      {
+        cat: "圖形性質",
+        q: "平行四邊形的一條對角線，會把它分割成兩個什麼樣的圖形？",
+        options: ["兩個全等的三角形", "兩個長方形", "兩個梯形", "一個圓形與一個正方形"],
+        ans: 0,
+        hint: "對角線將其分為兩個底、高、邊長皆完全相等的三角形。"
+      },
+      {
+        cat: "比例推論",
+        q: "如果一個三角形的底變成原來的 2 倍，高保持不變，面積會變成幾倍？",
+        options: ["2 倍", "4 倍", "不變", "一半"],
+        ans: 0,
+        hint: "面積公式是 底×高÷2，底變 2 倍，整體結果就變 2 倍。"
+      },
+      {
+        cat: "比例推論",
+        q: "如果一個平行四邊形的「底變成 2 倍、高也變成 2 倍」，面積會變成幾倍？",
+        options: ["4 倍", "2 倍", "8 倍", "不變"],
+        ans: 0,
+        hint: "2 × 2 ＝ 4 倍！"
+      },
+      {
+        cat: "垂直高識別",
+        q: "計算三角形面積時，所選取的「高」必須與所選取的「底」具有什麼關係？",
+        options: ["互相垂直 (夾角90度)", "互相平行", "長度相等", "斜向45度"],
+        ans: 0,
+        hint: "高代表的是頂點到底邊的最短垂直距離。"
+      },
+      {
+        cat: "直角三角形",
+        q: "直角三角形的三邊長分別為 6cm、8cm、10cm，它的面積是多少？",
+        options: ["24 平方公分", "48 平方公分", "40 平方公分", "30 平方公分"],
+        ans: 0,
+        hint: "兩條互相垂直的直角邊（6與8）就是互相對應的底與高：6 × 8 ÷ 2。"
+      },
+      {
+        cat: "斜邊干擾",
+        q: "承上題，直角三角形兩直角邊為 6cm 與 8cm，若以最長的斜邊 10cm 當作底，它的高是多少？",
+        options: ["4.8 公分", "5 公分", "2.4 公分", "9.6 公分"],
+        ans: 0,
+        hint: "面積 ＝ 24，高 ＝ 24 × 2 ÷ 10 ＝ 4.8 公分。"
+      },
+      {
+        cat: "鈍角三角形",
+        q: "鈍角三角形的三條高裡面，有幾條高會畫在三角形的「外部」？",
+        options: ["2 條", "1 條", "3 條", "0 條"],
+        ans: 0,
+        hint: "兩條較短邊的高，必須從頂點延伸底邊做垂直線，因此落在外部。"
+      },
+      {
+        cat: "干擾項破解",
+        q: "一個平行四邊形底是 7 公分、垂直高是 4 公分，斜邊長是 5 公分，面積是多少？",
+        options: ["28 平方公分", "35 平方公分", "20 平方公分", "14 平方公分"],
+        ans: 0,
+        hint: "小心斜邊 5 公分是干擾數據！公式只要 底(7) × 高(4)。"
+      },
+      {
+        cat: "等底等高",
+        q: "在兩條平行線之間，畫出三個底邊長度相同的三角形（一個銳角、一個直角、一個鈍角），它們的面積如何？",
+        options: ["三個三角形面積完全一樣大", "直角三角形最大", "銳角三角形最大", "鈍角三角形最大"],
+        ans: 0,
+        hint: "平行線間的距離處處相等（高相同），又同底，面積必定相同！"
+      },
+      {
+        cat: "生態邊界思辨",
+        q: "在「消失的領地」活動中，農夫用筆直高牆分割土地，對野生動物最主要的負面影響是什麼？",
+        options: ["棲地破碎化，阻斷動物覓食與繁衍通道", "增加動物的運動量", "讓動物不容易迷路", "完全沒有影響"],
+        ans: 0,
+        hint: "人類筆直的人造設施會切斷自然生態走廊。"
+      },
+      {
+        cat: "生態永續行動",
+        q: "農夫如果想兼顧農作物種植與野生動物生存，最好的做法是什麼？",
+        options: ["預留生態綠廊 (動物專用廊道與綠帶)", "把農田蓋滿水泥", "拉起通電鐵絲網", "將所有野生動物驅趕到外縣市"],
+        ans: 0,
+        hint: "人與自然共好，保留綠色通道（生態廊道）最永續！"
+      },
+      {
+        cat: "數值計算",
+        q: "一個三角形底是 15 公分、高是 8 公分，它的面積是多少？",
+        options: ["60 平方公分", "120 平方公分", "23 平方公分", "40 平方公分"],
+        ans: 0,
+        hint: "15 × 8 ÷ 2 ＝ 60。"
+      },
+      {
+        cat: "數值計算",
+        q: "一個平行四邊形停車位的底是 5 公尺、垂直高是 2.5 公尺，面積是多少？",
+        options: ["12.5 平方公尺", "25 平方公尺", "7.5 平方公尺", "10 平方公尺"],
+        ans: 0,
+        hint: "5 × 2.5 ＝ 12.5。"
+      },
+      {
+        cat: "逆向求值",
+        q: "某三角形面積為 50 平方公尺，高是 10 公尺，它的底長是多少公尺？",
+        options: ["10 公尺", "5 公尺", "20 公尺", "2.5 公尺"],
+        ans: 0,
+        hint: "底 ＝ 面積 × 2 ÷ 高 ＝ 50 × 2 ÷ 10 ＝ 10。"
+      },
+      {
+        cat: "圖形性質",
+        q: "平行四邊形有幾組互相平行的對邊？",
+        options: ["2 組", "1 組", "3 組", "4 組"],
+        ans: 0,
+        hint: "上底平行下底，左腰平行右腰，共 2 組。"
+      },
+      {
+        cat: "圖形比較",
+        q: "只有一組對邊平行的四邊形叫做什麼？",
+        options: ["梯形", "平行四邊形", "菱形", "長方形"],
+        ans: 0,
+        hint: "梯形只有一組對邊平行。"
+      },
+      {
+        cat: "割補思考",
+        q: "如果把一個平行四邊形「拉正」變成「長方形」（四邊邊長不變），它的面積會變大還是變小？",
+        options: ["變大（垂直高變長了）", "變小", "完全不變", "無法判定"],
+        ans: 0,
+        hint: "原本斜邊大於高，拉正後高變成斜邊長，高變大了，面積變大！"
+      },
+      {
+        cat: "割補思考",
+        q: "將三角形沿著高的中點剪一刀，可以拼成一個平行四邊形，這時新圖形的高是原本的多少？",
+        options: ["一半 (1/2)", "2 倍", "一樣長", "4 倍"],
+        ans: 0,
+        hint: "沿著高的一半剪開補齊，底不變、高變為一半。"
+      },
+      {
+        cat: "數值計算",
+        q: "三角形的底為 14 公尺、高為 7 公尺，其面積是多少？",
+        options: ["49 平方公尺", "98 平方公尺", "21 平方公尺", "28 平方公尺"],
+        ans: 0,
+        hint: "14 × 7 ÷ 2 ＝ 49。"
+      },
+      {
+        cat: "生活情境",
+        q: "學校規劃一塊三角形的花圃，底為 10 公尺、高為 4 公尺。如果每平方公尺種植 3 株杜鵑花，共需幾株花？",
+        options: ["60 株", "120 株", "20 株", "40 株"],
+        ans: 0,
+        hint: "花圃面積 ＝ 10 × 4 ÷ 2 ＝ 20 平方公尺；20 × 3 ＝ 60 株。"
+      },
+      {
+        cat: "生態保育",
+        q: "國道高速公路常見的「跨越式動物通道」，是為了幫哪種野生動物減少路殺風險？",
+        options: ["石虎與哺乳類動物", "深海魚類", "南極企鵝", "海龜"],
+        ans: 0,
+        hint: "台灣淺山地區的石虎通道即為跨越式綠廊代表。"
+      },
+      {
+        cat: "面積守恆",
+        q: "把一張紙沿著直線剪成兩半，再拼成不同形狀，整體的「總面積」會如何？",
+        options: ["保持不變（面積守恆）", "一定會變大", "一定會變小", "剪過後紙張面積歸零"],
+        ans: 0,
+        hint: "這就是剪拼推導公式的核心：面積守恆定律！"
+      },
+      {
+        cat: "未來遷移",
+        q: "下次我們遇到更複雜的「梯形」或「不規則多邊形」時，可以用什麼策略算面積？",
+        options: ["切割成我們熟悉的三角形與長方形再相加", "只能用猜的", "直接用尺量周長當作面積", "把它揉掉不計算"],
+        ans: 0,
+        hint: "化繁為簡：將複雜圖形切割或補齊為已知圖形！"
+      }
+    ];
+
+    // Global App States
+    let currentTab = 'lab'; // 'lab' | 'game' | 'record'
+    let labMode = 'cutParallelogram'; // 'cutParallelogram' | 'twoTriangles' | 'ecoCorridor'
+    let labProgress = 0; // 0 to 100
+    let autoPlayTimer = null;
+
+    // Game state
+    let gameTimer = null;
+    let isGameRunning = false;
+    let gameSecondsLeft = 120; // 2 minutes
+    let gameHearts = 3;
+    let gameScore = 0;
+    let gameStreak = 0;
+    let gameTotalAnswered = 0;
+    let gameCorrectCount = 0;
+    let gameWrongCount = 0;
+    let gameQuestions = [];
+    let currentQuestionIdx = 0;
+    let isAnswerLocked = false;
+
+    // Student identity
+    let studentClass = "五年一班";
+    let studentSeat = "28號";
+    let studentName = "野比大雄";
+
+    // Canvas Initialization & Rendering
+    const canvas = document.getElementById('labCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function resizeLabCanvas() {
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const w = rect.width > 0 ? rect.width : (canvas.parentElement ? canvas.parentElement.clientWidth : 800);
+      const h = rect.height > 0 ? rect.height : 450;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      drawLabScene();
+    }
+
+    function drawLabScene() {
+      if (!ctx) return;
+      const w = canvas.width;
+      const h = canvas.height;
+      const dpr = window.devicePixelRatio || 1;
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+
+      // Background grid
+      ctx.save();
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
+      ctx.lineWidth = 1 * dpr;
+      const gridSize = 30 * dpr;
+      for (let x = 0; x < w; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+      for (let y = 0; y < h; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      const t = labProgress / 100; // 0 to 1
+
+      if (labMode === 'cutParallelogram') {
+        drawParallelogramCut(w, h, dpr, t);
+      } else if (labMode === 'twoTriangles') {
+        drawTwoTrianglesMerge(w, h, dpr, t);
+      } else if (labMode === 'ecoCorridor') {
+        drawEcoCorridorScene(w, h, dpr, t);
+      }
+    }
+
+    // Helper: Draw clean dimension arrow
+    function drawDimensionArrow(ctx, x1, y1, x2, y2, dpr, label, labelOffset = -12) {
+      ctx.save();
+      ctx.strokeStyle = "#FDE68A";
+      ctx.fillStyle = "#FDE68A";
+      ctx.lineWidth = 2 * dpr;
+
+      // Line
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+
+      // Arrow heads
+      const arrowSize = 6 * dpr;
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      
+      function drawHead(px, py, ang) {
+        ctx.beginPath();
+        ctx.moveTo(px, py);
+        ctx.lineTo(px - arrowSize * Math.cos(ang - Math.PI / 6), py - arrowSize * Math.sin(ang - Math.PI / 6));
+        ctx.lineTo(px - arrowSize * Math.cos(ang + Math.PI / 6), py - arrowSize * Math.sin(ang + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+      }
+      drawHead(x1, y1, angle + Math.PI);
+      drawHead(x2, y2, angle);
+
+      // Label text
+      const midX = (x1 + x2) / 2;
+      const midY = (y1 + y2) / 2;
+      ctx.font = `bold ${13 * dpr}px 'Noto Sans TC'`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(label, midX, midY + labelOffset * dpr);
+      ctx.restore();
+    }
+
+    // 1. Cut and Slide Parallelogram into Rectangle (Fixed geometry & ghost silhouette)
+    function drawParallelogramCut(w, h, dpr, t) {
+      const cx = w / 2;
+      const cy = h / 2 - 10 * dpr;
+
+      const baseWidth = Math.min(w * 0.42, 280 * dpr);
+      const heightVal = Math.min(h * 0.44, 150 * dpr);
+      const skewOffset = baseWidth * 0.32; // Slanted offset
+
+      // Anchor origin
+      const leftX = cx - (baseWidth + skewOffset) / 2;
+      const bottomY = cy + heightVal / 2;
+      const topY = cy - heightVal / 2;
+
+      // 1. Ghost Cut Silhouette (Shows where the triangle was sliced from)
+      if (t > 0.02) {
+        ctx.save();
+        ctx.fillStyle = "rgba(16, 185, 129, 0.12)";
+        ctx.strokeStyle = "rgba(251, 191, 36, 0.7)";
+        ctx.lineWidth = 2 * dpr;
+        ctx.setLineDash([5 * dpr, 4 * dpr]);
+        ctx.beginPath();
+        ctx.moveTo(leftX, bottomY);
+        ctx.lineTo(leftX + skewOffset, bottomY);
+        ctx.lineTo(leftX + skewOffset, topY);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = "#FDE68A";
+        ctx.font = `bold ${12 * dpr}px 'Noto Sans TC'`;
+        ctx.textAlign = "center";
+        ctx.fillText("剪下處", leftX + skewOffset * 0.4, bottomY - heightVal * 0.35);
+        ctx.restore();
+      }
+
+      // 2. Main Fixed Trapezoid (Center/Right portion)
+      ctx.save();
+      ctx.fillStyle = "#059669"; // Emerald 600
+      ctx.strokeStyle = "#34D399";
+      ctx.lineWidth = 3 * dpr;
+      ctx.beginPath();
+      ctx.moveTo(leftX + skewOffset, topY);
+      ctx.lineTo(leftX + skewOffset, bottomY);
+      ctx.lineTo(leftX + baseWidth, bottomY);
+      ctx.lineTo(leftX + baseWidth + skewOffset, topY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+
+      // 3. Moving Right Triangle (slides from left to right side)
+      const slideShift = t * baseWidth;
+
+      ctx.save();
+      ctx.fillStyle = t > 0.95 ? "#059669" : "#10B981";
+      ctx.strokeStyle = t > 0.95 ? "#34D399" : "#6EE7B7";
+      ctx.lineWidth = 3 * dpr;
+      ctx.beginPath();
+      ctx.moveTo(leftX + slideShift, bottomY);
+      ctx.lineTo(leftX + skewOffset + slideShift, bottomY);
+      ctx.lineTo(leftX + skewOffset + slideShift, topY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Movement track trajectory
+      if (t > 0.05 && t < 0.95) {
+        ctx.strokeStyle = "rgba(251, 191, 36, 0.6)";
+        ctx.setLineDash([6 * dpr, 4 * dpr]);
+        ctx.lineWidth = 2 * dpr;
+        ctx.beginPath();
+        ctx.moveTo(leftX + skewOffset / 2, cy);
+        ctx.lineTo(leftX + skewOffset / 2 + slideShift, cy);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // 4. Height vertical dashed line & Right-angle symbol
+      ctx.save();
+      ctx.strokeStyle = "#F59E0B";
+      ctx.lineWidth = 2 * dpr;
+      ctx.setLineDash([4 * dpr, 4 * dpr]);
+      ctx.beginPath();
+      ctx.moveTo(leftX + skewOffset, topY);
+      ctx.lineTo(leftX + skewOffset, bottomY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Right-angle symbol
+      const raSize = 10 * dpr;
+      ctx.strokeRect(leftX + skewOffset, bottomY - raSize, raSize, raSize);
+      ctx.restore();
+
+      // 5. Dimension Annotations
+      drawDimensionArrow(ctx, leftX + skewOffset - 18 * dpr, topY, leftX + skewOffset - 18 * dpr, bottomY, dpr, "高 h = 6m", -35);
+      
+      const currentBaseLeft = leftX + (t > 0.9 ? skewOffset : 0);
+      const currentBaseRight = leftX + baseWidth + (t > 0.9 ? skewOffset : 0);
+      drawDimensionArrow(ctx, currentBaseLeft, bottomY + 22 * dpr, currentBaseRight, bottomY + 22 * dpr, dpr, "底 b = 8m", 16);
+
+      // Status text banner
+      ctx.save();
+      ctx.fillStyle = t > 0.95 ? "#6EE7B7" : "#FDE68A";
+      ctx.font = `bold ${15 * dpr}px 'Noto Sans TC'`;
+      ctx.textAlign = "center";
+      if (t < 0.1) {
+        ctx.fillText("✂️ 請拖動下方滑桿，沿著垂直高剪開並平移！", cx, topY - 24 * dpr);
+      } else if (t < 0.95) {
+        ctx.fillText(`平移轉化中 (${Math.round(t * 100)}%)：面積完全守恆`, cx, topY - 24 * dpr);
+      } else {
+        ctx.fillText("🎉 成功轉化為長方形！面積 ＝ 長 × 寬 ＝ 底 × 高 ＝ 48 平方公尺", cx, topY - 24 * dpr);
+      }
+      ctx.restore();
+    }
+
+    // 2. Rotate & Merge Two Congruent Triangles (Mathematically calibrated midpoint rotation)
+    function drawTwoTrianglesMerge(w, h, dpr, t) {
+      const cx = w / 2;
+      const cy = h / 2 - 15 * dpr;
+
+      const baseWidth = Math.min(w * 0.42, 260 * dpr);
+      const heightVal = Math.min(h * 0.42, 140 * dpr);
+      const topOffsetX = baseWidth * 0.35;
+
+      // Triangle A base vertices
+      const xA = cx - baseWidth / 2;
+      const yA = cy + heightVal / 2;
+      const xB = xA + baseWidth;
+      const yB = yA;
+      const xC = xA + topOffsetX;
+      const yC = cy - heightVal / 2;
+
+      // Midpoint of slanted side BC (The exact mathematical rotation axis!)
+      const midBC_x = (xB + xC) / 2;
+      const midBC_y = (yB + yC) / 2;
+
+      // 1. Draw Stationary Triangle A (Blue)
+      ctx.save();
+      ctx.fillStyle = "#2563EB"; // Blue 600
+      ctx.strokeStyle = "#93C5FD";
+      ctx.lineWidth = 3 * dpr;
+      ctx.beginPath();
+      ctx.moveTo(xA, yA);
+      ctx.lineTo(xB, yB);
+      ctx.lineTo(xC, yC);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = `bold ${14 * dpr}px 'Noto Sans TC'`;
+      ctx.textAlign = "center";
+      ctx.fillText("三角形 A (阿豪地)", (xA + xB + xC) / 3, (yA + yB + yC) / 3 + 4 * dpr);
+      ctx.restore();
+
+      // 2. Draw Rotating Triangle B (Congruent copy, rotating around side BC midpoint)
+      ctx.save();
+      // Floating offset when t < 1 to show separation
+      const floatX = (1 - t) * 65 * dpr;
+      const floatY = -(1 - t) * 85 * dpr;
+      const rotationAngle = t * Math.PI; // 0 to 180 degrees
+
+      // Translate to current dynamic pivot
+      ctx.translate(midBC_x + floatX, midBC_y + floatY);
+      ctx.rotate(rotationAngle);
+
+      // Local coordinates of Triangle B relative to its side BC midpoint
+      const locA_x = xA - midBC_x;
+      const locA_y = yA - midBC_y;
+      const locB_x = xB - midBC_x;
+      const locB_y = yB - midBC_y;
+      const locC_x = xC - midBC_x;
+      const locC_y = yC - midBC_y;
+
+      ctx.fillStyle = t > 0.95 ? "#2563EB" : "rgba(244, 63, 94, 0.88)"; // Rose 500
+      ctx.strokeStyle = t > 0.95 ? "#93C5FD" : "#FDA4AF";
+      ctx.lineWidth = 3 * dpr;
+      ctx.beginPath();
+      ctx.moveTo(locA_x, locA_y);
+      ctx.lineTo(locB_x, locB_y);
+      ctx.lineTo(locC_x, locC_y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = `bold ${13 * dpr}px 'Noto Sans TC'`;
+      ctx.textAlign = "center";
+      ctx.fillText("三角形 B (全等)", (locA_x + locB_x + locC_x) / 3, (locA_y + locB_y + locC_y) / 3 + 4 * dpr);
+      ctx.restore();
+
+      // 3. Diagonal dividing line indicator when merged
+      if (t > 0.9) {
+        ctx.save();
+        ctx.strokeStyle = "#FDE68A";
+        ctx.lineWidth = 2 * dpr;
+        ctx.setLineDash([4 * dpr, 4 * dpr]);
+        ctx.beginPath();
+        ctx.moveTo(xB, yB);
+        ctx.lineTo(xC, yC);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // 4. Dimensions and height
+      ctx.save();
+      ctx.strokeStyle = "#F59E0B";
+      ctx.lineWidth = 2 * dpr;
+      ctx.setLineDash([4 * dpr, 4 * dpr]);
+      ctx.beginPath();
+      ctx.moveTo(xC, yC);
+      ctx.lineTo(xC, yA);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      
+      const raSize = 10 * dpr;
+      ctx.strokeRect(xC, yA - raSize, raSize, raSize);
+      ctx.restore();
+
+      drawDimensionArrow(ctx, xC - 16 * dpr, yC, xC - 16 * dpr, yA, dpr, "高 h = 6m", -35);
+      drawDimensionArrow(ctx, xA, yA + 22 * dpr, xB, yA + 22 * dpr, dpr, "底 b = 8m", 16);
+
+      // Status text banner
+      ctx.save();
+      ctx.fillStyle = t > 0.95 ? "#93C5FD" : "#FDE68A";
+      ctx.font = `bold ${14 * dpr}px 'Noto Sans TC'`;
+      ctx.textAlign = "center";
+      if (t < 0.1) {
+        ctx.fillText("🔄 請拖動滑桿：將三角形 B 旋轉 180 度進行對邊拼貼！", cx, yC - 20 * dpr);
+      } else if (t < 0.95) {
+        ctx.fillText(`旋轉拼接中 (${Math.round(t * 100)}%)：沿對應斜邊重合`, cx, yC - 20 * dpr);
+      } else {
+        ctx.fillText("🎯 拼合完成！平行四邊形 ＝ 底 × 高 ➔ 一個三角形 ＝ 底 × 高 ÷ 2", cx, yC - 20 * dpr);
+      }
+      ctx.restore();
+    }
+
+    // 3. Ecological Corridor and Land Division (Correct proportions, shared boundary at t=0, and exact linear slant)
+    function drawEcoCorridorScene(w, h, dpr, t) {
+      const cx = w / 2;
+      
+      // Vertical safe drawing area (accounts for top status and bottom slider)
+      const topMargin = 28 * dpr;
+      const bottomMargin = 68 * dpr;
+      const cy = topMargin + (h - topMargin - bottomMargin) / 2;
+
+      // Proportional scale: 8m base by 6m height (4:3 true geometry ratio)
+      const meter = Math.min((h - topMargin - bottomMargin) * 0.58 / 6, (w * 0.72) / 21);
+      const farmHeight = 6 * meter;
+      const farmWidth = 8 * meter;
+      const skew = 2.2 * meter; // Slant of 2.2m horizontal over 6m vertical
+
+      const topY = cy - farmHeight / 2;
+      const bottomY = cy + farmHeight / 2;
+
+      // Real-world corridor width: 0m (adjacent closed fence) to 2.4m (open green passage)
+      const corridorMaxMeters = 2.4;
+      const currentCorridorMeters = t * corridorMaxMeters;
+      const corridorWidth = currentCorridorMeters * meter;
+
+      // Centered layout coordinates
+      const totalSpan = 2 * farmWidth + corridorWidth + skew;
+      const A_bot_left = cx - totalSpan / 2;
+      const A_bot_right = A_bot_left + farmWidth;
+      const B_bot_left = A_bot_right + corridorWidth;
+      const B_bot_right = B_bot_left + farmWidth;
+
+      // Exact linear slant function (dx/dy = skew / farmHeight, ensuring zero dog-leg bends)
+      const slantAtY = (y) => ((bottomY - y) / farmHeight) * skew;
+      const yForest = topY - 14 * dpr;
+      const yWetland = bottomY + 20 * dpr;
+
+      // 1. Natural Habitat Hint Banners (North Forest & South Wetland)
+      ctx.save();
+      // North Forest
+      ctx.fillStyle = "rgba(16, 185, 129, 0.08)";
+      ctx.fillRect(0, 0, w, yForest);
+      ctx.strokeStyle = "rgba(52, 211, 153, 0.35)";
+      ctx.lineWidth = 1.5 * dpr;
+      ctx.setLineDash([4 * dpr, 4 * dpr]);
+      ctx.beginPath();
+      ctx.moveTo(0, yForest);
+      ctx.lineTo(w, yForest);
+      ctx.stroke();
+
+      ctx.fillStyle = "#A7F3D0";
+      ctx.font = `bold ${11 * dpr}px 'Noto Sans TC'`;
+      ctx.textAlign = "left";
+      ctx.fillText("🌲 ⛰️ 北側山林棲地 (石虎繁衍核心區)", 14 * dpr, yForest - 8 * dpr);
+
+      // South Wetland
+      ctx.fillStyle = "rgba(59, 130, 246, 0.08)";
+      ctx.fillRect(0, yWetland, w, h - yWetland);
+      ctx.strokeStyle = "rgba(96, 165, 250, 0.35)";
+      ctx.beginPath();
+      ctx.moveTo(0, yWetland);
+      ctx.lineTo(w, yWetland);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = "#BFDBFE";
+      ctx.font = `bold ${11 * dpr}px 'Noto Sans TC'`;
+      ctx.textAlign = "left";
+      ctx.fillText("💧 🌾 南側溪流濕地 (野生動物覓食與水源區)", 14 * dpr, yWetland + 16 * dpr);
+      ctx.restore();
+
+      // 2. Draw Farmer A: 阿明的領地 (真實平行四邊形, 48m²)
+      ctx.save();
+      ctx.fillStyle = "#065F46"; // Dark emerald
+      ctx.strokeStyle = "#34D399";
+      ctx.lineWidth = 2.5 * dpr;
+      ctx.beginPath();
+      ctx.moveTo(A_bot_left + skew, topY);
+      ctx.lineTo(A_bot_right + skew, topY);
+      ctx.lineTo(A_bot_right, bottomY);
+      ctx.lineTo(A_bot_left, bottomY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Agricultural row stripes
+      ctx.strokeStyle = "rgba(52, 211, 153, 0.25)";
+      ctx.lineWidth = 1.5 * dpr;
+      for (let r = 1; r <= 3; r++) {
+        const ry = topY + (farmHeight / 4) * r;
+        const rxOffset = slantAtY(ry);
+        ctx.beginPath();
+        ctx.moveTo(A_bot_left + rxOffset, ry);
+        ctx.lineTo(A_bot_right + rxOffset, ry);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = `bold ${12 * dpr}px 'Noto Sans TC'`;
+      ctx.textAlign = "center";
+      ctx.fillText("阿明：平行四邊形", (A_bot_left + A_bot_right + skew) / 2, cy - 8 * dpr);
+      ctx.fillStyle = "#6EE7B7";
+      ctx.font = `900 ${14 * dpr}px 'Noto Sans TC'`;
+      ctx.fillText("48 平方公尺", (A_bot_left + A_bot_right + skew) / 2, cy + 10 * dpr);
+      ctx.fillStyle = "#A7F3D0";
+      ctx.font = `bold ${10 * dpr}px 'Noto Sans TC'`;
+      ctx.fillText("(底 8m × 高 6m)", (A_bot_left + A_bot_right + skew) / 2, cy + 24 * dpr);
+      ctx.restore();
+
+      // 3. Draw Farmer B: 阿豪的領地 (真實三角形, 24m²)
+      ctx.save();
+      ctx.fillStyle = "#1E3A8A"; // Deep navy blue
+      ctx.strokeStyle = "#60A5FA";
+      ctx.lineWidth = 2.5 * dpr;
+      ctx.beginPath();
+      ctx.moveTo(B_bot_left + skew, topY);
+      ctx.lineTo(B_bot_right, bottomY);
+      ctx.lineTo(B_bot_left, bottomY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Agricultural row stripes inside triangle
+      ctx.strokeStyle = "rgba(96, 165, 250, 0.25)";
+      ctx.lineWidth = 1.5 * dpr;
+      for (let r = 1; r <= 3; r++) {
+        const ry = topY + (farmHeight / 4) * r;
+        const frac = r / 4;
+        const rx1 = (B_bot_left + skew) * (1 - frac) + B_bot_left * frac;
+        const rx2 = (B_bot_left + skew) * (1 - frac) + B_bot_right * frac;
+        ctx.beginPath();
+        ctx.moveTo(rx1, ry);
+        ctx.lineTo(rx2, ry);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = `bold ${12 * dpr}px 'Noto Sans TC'`;
+      ctx.textAlign = "center";
+      ctx.fillText("阿豪：三角形", B_bot_left + farmWidth * 0.42, cy - 8 * dpr);
+      ctx.fillStyle = "#93C5FD";
+      ctx.font = `900 ${14 * dpr}px 'Noto Sans TC'`;
+      ctx.fillText("24 平方公尺", B_bot_left + farmWidth * 0.42, cy + 10 * dpr);
+      ctx.fillStyle = "#BFDBFE";
+      ctx.font = `bold ${10 * dpr}px 'Noto Sans TC'`;
+      ctx.fillText("(底 8m × 高 6m ÷ 2)", B_bot_left + farmWidth * 0.42, cy + 24 * dpr);
+      ctx.restore();
+
+      // 4. Ecological Corridor / Property Barrier (Mathematically continuous slant without broken lines)
+      ctx.save();
+      const xA_top = A_bot_right + slantAtY(yForest);
+      const xA_bot = A_bot_right + slantAtY(yWetland);
+      const xB_top = B_bot_left + slantAtY(yForest);
+      const xB_bot = B_bot_left + slantAtY(yWetland);
+
+      if (t < 0.08) {
+        // Initial Adjacent State: Shared boundary line with closed fences (0m corridor)
+        ctx.strokeStyle = "#EF4444";
+        ctx.lineWidth = 3 * dpr;
+        ctx.setLineDash([5 * dpr, 4 * dpr]);
+        ctx.beginPath();
+        ctx.moveTo(xA_top, yForest);
+        ctx.lineTo(xA_bot, yWetland);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Fence posts & warning badge
+        const midFenceX = (xA_top + xA_bot) / 2;
+        ctx.fillStyle = "#FCA5A5";
+        ctx.font = `bold ${11 * dpr}px 'Noto Sans TC'`;
+        ctx.textAlign = "center";
+        ctx.fillText("🚧 爭端邊界 (綠廊 0m)", midFenceX, cy - 10 * dpr);
+        ctx.font = `bold ${9 * dpr}px 'Noto Sans TC'`;
+        ctx.fillText("完全阻隔・棲地破碎", midFenceX, cy + 6 * dpr);
+
+      } else {
+        // Dynamic Ecological Corridor: Expands in true proportion (0m -> 2.4m)
+        ctx.fillStyle = "rgba(16, 185, 129, 0.28)";
+        ctx.strokeStyle = "#10B981";
+        ctx.lineWidth = 2 * dpr;
+
+        ctx.beginPath();
+        ctx.moveTo(xA_top, yForest);
+        ctx.lineTo(xB_top, yForest);
+        ctx.lineTo(xB_bot, yWetland);
+        ctx.lineTo(xA_bot, yWetland);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.setLineDash([5 * dpr, 3 * dpr]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Animated Wildlife Paw Prints navigating through the corridor
+        const corridorMidTopX = (xA_top + xB_top) / 2;
+        const corridorMidBotX = (xA_bot + xB_bot) / 2;
+        ctx.fillStyle = "#FEF08A";
+        ctx.font = `bold ${13 * dpr}px 'Noto Sans TC'`;
+        ctx.textAlign = "center";
+
+        const steps = 4;
+        for (let i = 0; i <= steps; i++) {
+          const frac = i / steps;
+          const py = yForest + 10 * dpr + frac * (yWetland - yForest - 20 * dpr);
+          const px = corridorMidTopX * (1 - frac) + corridorMidBotX * frac + (i % 2 === 0 ? -3 * dpr : 3 * dpr);
+          ctx.fillText("🐾", px, py);
         }
 
-        window.onload = function() {
-            // 初始化動態 QR Code
-            generateQrCode();
-
-            // 初始化雙幾何 Canvas 畫布
-            initCanvases();
-
-            // 鍵盤 ESC 鍵全域關閉 Modal
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    ['qrModal', 'guideModal', 'confirmClearModal'].forEach(closeModal);
-                }
-            });
-
-            // 監聽全螢幕狀態切換以更新圖示
-            document.addEventListener('fullscreenchange', syncFullscreenIcon);
-            document.addEventListener('webkitfullscreenchange', syncFullscreenIcon);
-
-            // 視窗縮放重繪畫布
-            window.addEventListener('resize', () => {
-                drawCanvas1();
-                drawCanvas2();
-            });
-        };
-
-        // QR Code 動態生成器
-        function generateQrCode() {
-            const qrContainer = document.getElementById("qrcode");
-            if (!qrContainer) return;
-            qrContainer.innerHTML = "";
-            const currentUrl = window.location.href;
-            try {
-                new QRCode(qrContainer, {
-                    text: currentUrl,
-                    width: 180,
-                    height: 180,
-                    colorDark : "#0f172a",
-                    colorLight : "#ffffff",
-                    correctLevel : QRCode.CorrectLevel.H
-                });
-            } catch (err) {
-                qrContainer.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(currentUrl)}" alt="QR Code" class="mx-auto rounded-xl">`;
-            }
+        // Corridor Width Indicator Label
+        if (corridorWidth > 18 * dpr) {
+          ctx.fillStyle = "#6EE7B7";
+          ctx.font = `900 ${11 * dpr}px 'Noto Sans TC'`;
+          ctx.textAlign = "center";
+          ctx.fillText(`綠廊 ${currentCorridorMeters.toFixed(1)}m`, (corridorMidTopX + corridorMidBotX) / 2, cy - 24 * dpr);
         }
+      }
+      ctx.restore();
 
-        // Modal 控制與背景點擊關閉
-        function openModal(id) {
-            if (id === 'qrModal') generateQrCode();
-            const el = document.getElementById(id);
-            if (el) el.classList.remove('hidden');
+      // 5. Dimension Annotations for BOTH Farmlands (Confirms "底同8m、高同6m")
+      // Farmer A: Height vertical dashed line
+      ctx.save();
+      ctx.strokeStyle = "#F59E0B";
+      ctx.lineWidth = 1.5 * dpr;
+      ctx.setLineDash([3 * dpr, 3 * dpr]);
+      ctx.beginPath();
+      ctx.moveTo(A_bot_left + skew, topY);
+      ctx.lineTo(A_bot_left + skew, bottomY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      
+      const raA = 7 * dpr;
+      ctx.strokeRect(A_bot_left + skew, bottomY - raA, raA, raA);
+      ctx.restore();
+
+      // Dimension arrows for Farmer A
+      drawDimensionArrow(ctx, A_bot_left + skew - 14 * dpr, topY, A_bot_left + skew - 14 * dpr, bottomY, dpr, "高 6m", -24);
+      drawDimensionArrow(ctx, A_bot_left, bottomY + 16 * dpr, A_bot_right, bottomY + 16 * dpr, dpr, "底 8m", 13);
+
+      // Farmer B: Height vertical dashed line from apex
+      ctx.save();
+      ctx.strokeStyle = "#F59E0B";
+      ctx.lineWidth = 1.5 * dpr;
+      ctx.setLineDash([3 * dpr, 3 * dpr]);
+      ctx.beginPath();
+      ctx.moveTo(B_bot_left + skew, topY);
+      ctx.lineTo(B_bot_left + skew, bottomY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      const raB = 7 * dpr;
+      ctx.strokeRect(B_bot_left + skew, bottomY - raB, raB, raB);
+      ctx.restore();
+
+      // Dimension arrows for Farmer B
+      drawDimensionArrow(ctx, B_bot_left + skew - 14 * dpr, topY, B_bot_left + skew - 14 * dpr, bottomY, dpr, "高 6m", -24);
+      drawDimensionArrow(ctx, B_bot_left, bottomY + 16 * dpr, B_bot_right, bottomY + 16 * dpr, dpr, "底 8m", 13);
+
+      // 6. Top Status Banner (Fully unobstructed)
+      ctx.save();
+      ctx.fillStyle = t > 0.3 ? "#6EE7B7" : "#FDE68A";
+      ctx.font = `bold ${13 * dpr}px 'Noto Sans TC'`;
+      ctx.textAlign = "center";
+      if (t < 0.1) {
+        ctx.fillText("⚠️ 認知衝突：底同(8m)高同(6m)，平行四邊形面積(48m²)剛好是三角形(24m²)的2倍！請拉動滑桿留出綠廊", cx, yForest - 8 * dpr);
+      } else {
+        ctx.fillText(`🌿 領地智慧協商：兩農夫保留 ${currentCorridorMeters.toFixed(1)}m 生態綠廊，兼顧農業生產與石虎安全遷徙 (SDG 15)`, cx, yForest - 8 * dpr);
+      }
+      ctx.restore();
+    }
+
+    function setLabMode(mode) {
+      labMode = mode;
+      labProgress = 0;
+      document.getElementById('sliderProgress').value = 0;
+      document.getElementById('labelProgress').textContent = "0%";
+
+      const modes = ['Cut', 'Tri', 'Eco'];
+      modes.forEach(m => {
+        const btn = document.getElementById(`modeBtn${m}`);
+        if (!btn) return;
+        btn.classList.remove('bg-emerald-600', 'text-white', 'shadow-md');
+        btn.classList.add('bg-slate-100', 'text-slate-700');
+      });
+
+      if (mode === 'cutParallelogram') {
+        document.getElementById('modeBtnCut').classList.add('bg-emerald-600', 'text-white', 'shadow-md');
+        document.getElementById('modeBtnCut').classList.remove('bg-slate-100', 'text-slate-700');
+        document.getElementById('formulaTitle').textContent = "平行四邊形面積推導";
+        document.getElementById('formulaDesc').textContent = "沿著「垂直高」剪開直角三角形，平移補到右側，剛好拼成長方形！";
+        document.getElementById('formulaMath').textContent = "長方形面積 ＝ 長 × 寬 ➔ 平行四邊形面積 ＝ 底 × 高";
+      } else if (mode === 'twoTriangles') {
+        document.getElementById('modeBtnTri').classList.add('bg-emerald-600', 'text-white', 'shadow-md');
+        document.getElementById('modeBtnTri').classList.remove('bg-slate-100', 'text-slate-700');
+        document.getElementById('formulaTitle').textContent = "三角形面積推導 (為什麼除以2)";
+        document.getElementById('formulaDesc').textContent = "兩個全等的三角形旋轉 180 度拼接，剛好組成一個平行四邊形！";
+        document.getElementById('formulaMath').textContent = "平行四邊形 ＝ 底 × 高 ➔ 一個三角形 ＝ 底 × 高 ÷ 2";
+      } else {
+        document.getElementById('modeBtnEco').classList.add('bg-emerald-600', 'text-white', 'shadow-md');
+        document.getElementById('modeBtnEco').classList.remove('bg-slate-100', 'text-slate-700');
+        document.getElementById('formulaTitle').textContent = "消失的領地：生態綠廊思辨";
+        document.getElementById('formulaDesc').textContent = "兩位農夫底同 (8m)、高同 (6m)，但平行四邊形面積 (48m²) 是三角形 (24m²) 的兩倍！拉動滑桿退縮農地圍籬，為石虎打造跨越綠廊。";
+        document.getElementById('formulaMath').textContent = "底同高同：平行四邊形 48m² ＝ 三角形 24m² × 2 ｜ 預留綠廊守護棲地 (SDG 15)";
+      }
+
+      drawLabScene();
+    }
+
+    function updateLabProgress(val) {
+      labProgress = parseInt(val, 10);
+      document.getElementById('labelProgress').textContent = `${labProgress}%`;
+      drawLabScene();
+    }
+
+    function resetLabCanvas() {
+      if (autoPlayTimer) clearInterval(autoPlayTimer);
+      labProgress = 0;
+      document.getElementById('sliderProgress').value = 0;
+      document.getElementById('labelProgress').textContent = "0%";
+      drawLabScene();
+    }
+
+    function autoPlayTransformation() {
+      if (autoPlayTimer) clearInterval(autoPlayTimer);
+      labProgress = 0;
+      autoPlayTimer = setInterval(() => {
+        labProgress += 2;
+        if (labProgress > 100) {
+          labProgress = 100;
+          clearInterval(autoPlayTimer);
+          sfx.playCorrect();
         }
+        document.getElementById('sliderProgress').value = labProgress;
+        document.getElementById('labelProgress').textContent = `${labProgress}%`;
+        drawLabScene();
+      }, 25);
+    }
 
-        function closeModal(id) {
-            const el = document.getElementById(id);
-            if (el) el.classList.add('hidden');
+    function stepTransformation() {
+      if (autoPlayTimer) clearInterval(autoPlayTimer);
+      labProgress = Math.min(100, labProgress + 25);
+      document.getElementById('sliderProgress').value = labProgress;
+      document.getElementById('labelProgress').textContent = `${labProgress}%`;
+      if (labProgress === 100) sfx.playCorrect();
+      drawLabScene();
+    }
+
+    // Shuffle Array Utility (Fisher-Yates)
+    function shuffle(arr) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function startGame() {
+      sfx.init();
+      isGameRunning = true;
+      isAnswerLocked = false;
+
+      // Show/Hide UI views
+      document.getElementById('gameScreenReady').classList.add('hidden');
+      document.getElementById('gameScreenFinished').classList.add('hidden');
+      document.getElementById('gameScreenPlaying').classList.remove('hidden');
+      document.getElementById('btnEarlyFinish').classList.remove('hidden');
+
+      // Reset state
+      gameSecondsLeft = 120;
+      gameHearts = 3;
+      gameScore = 0;
+      gameStreak = 0;
+      gameTotalAnswered = 0;
+      gameCorrectCount = 0;
+      gameWrongCount = 0;
+      currentQuestionIdx = 0;
+
+      gameQuestions = shuffle(QUESTION_BANK);
+
+      updateHeartsUI();
+      updateGameStatsUI();
+      renderQuestion();
+
+      // Launch Timer
+      if (gameTimer) clearInterval(gameTimer);
+      gameTimer = setInterval(() => {
+        gameSecondsLeft--;
+        if (gameSecondsLeft <= 0) {
+          gameSecondsLeft = 0;
+          finishGame("時間到！2分鐘極速賽順利完成！");
         }
+        updateTimerUI();
+      }, 1000);
+      updateTimerUI();
+    }
 
-        function onBackdropClick(event, id) {
-            if (event.target.id === id) {
-                closeModal(id);
-            }
+    function confirmEarlyFinish() {
+      if (!isGameRunning) return;
+      finishGame("探員主動提前結算本次挑戰成績！");
+    }
+
+    function updateTimerUI() {
+      const mins = Math.floor(gameSecondsLeft / 60);
+      const secs = gameSecondsLeft % 60;
+      const str = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      document.getElementById('gameTimerText').textContent = str;
+
+      const pct = (gameSecondsLeft / 120) * 100;
+      const bar = document.getElementById('gameProgressBar');
+      bar.style.width = `${pct}%`;
+
+      if (gameSecondsLeft <= 20) {
+        document.getElementById('gameTimerText').classList.add('text-rose-600', 'animate-pulse');
+      } else {
+        document.getElementById('gameTimerText').classList.remove('text-rose-600', 'animate-pulse');
+      }
+    }
+
+    function updateHeartsUI() {
+      const container = document.getElementById('gameHearts');
+      let html = "";
+      for (let i = 0; i < 3; i++) {
+        if (i < gameHearts) {
+          html += '<i class="fa-solid fa-heart text-rose-500"></i>';
+        } else {
+          html += '<i class="fa-regular fa-heart text-slate-300"></i>';
         }
+      }
+      container.innerHTML = html;
+    }
 
-        // 一鍵複製網址 (相容 iPadOS / iOS 雙軌備援)
-        function copyPageUrl() {
-            const currentUrl = window.location.href;
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(currentUrl).then(() => {
-                    showToast("網址已成功複製到剪貼簿！");
-                }).catch(() => {
-                    fallbackCopy(currentUrl);
-                });
-            } else {
-                fallbackCopy(currentUrl);
-            }
+    function updateGameStatsUI() {
+      document.getElementById('gameScoreText').textContent = gameScore;
+    }
+
+    function renderQuestion() {
+      isAnswerLocked = false;
+      if (currentQuestionIdx >= gameQuestions.length) {
+        gameQuestions = shuffle(QUESTION_BANK);
+        currentQuestionIdx = 0;
+      }
+
+      const q = gameQuestions[currentQuestionIdx];
+      document.getElementById('questionCategory').textContent = q.cat;
+      document.getElementById('questionCounter').textContent = `第 ${gameTotalAnswered + 1} / 36 題`;
+      document.getElementById('questionText').textContent = q.q;
+      document.getElementById('questionHint').innerHTML = `<i class="fa-solid fa-lightbulb text-amber-500"></i> 提示：${q.hint}`;
+
+      const container = document.getElementById('optionsContainer');
+      container.innerHTML = "";
+
+      const optionIndices = [0, 1, 2, 3];
+      const shuffledOptions = shuffle(optionIndices);
+
+      shuffledOptions.forEach((origIdx) => {
+        const btn = document.createElement('button');
+        btn.className = "touch-btn w-full p-4 text-left sm:text-center text-lg sm:text-xl font-black rounded-2xl border-2 border-slate-200 bg-slate-50 hover:bg-emerald-50 hover:border-emerald-400 text-slate-800 transition-all active:scale-95 shadow-sm";
+        btn.textContent = q.options[origIdx];
+        btn.dataset.index = origIdx;
+        btn.onclick = () => handleAnswer(origIdx, btn);
+        container.appendChild(btn);
+      });
+
+      const toast = document.getElementById('feedbackToast');
+      toast.className = "hidden p-3.5 rounded-2xl text-center font-black text-base sm:text-lg";
+    }
+
+    function handleAnswer(selectedIdx, clickedBtn) {
+      if (isAnswerLocked || !isGameRunning) return;
+      isAnswerLocked = true; // Anti-debounce lock for iPad taps
+
+      const q = gameQuestions[currentQuestionIdx];
+      gameTotalAnswered++;
+
+      // Disable all option buttons immediately
+      const allButtons = document.querySelectorAll('#optionsContainer button');
+      allButtons.forEach(b => {
+        b.disabled = true;
+        b.classList.remove('hover:bg-emerald-50', 'hover:border-emerald-400', 'active:scale-95');
+      });
+
+      const toast = document.getElementById('feedbackToast');
+      toast.classList.remove('hidden');
+
+      if (selectedIdx === q.ans) {
+        // Correct Answer
+        sfx.playCorrect();
+        gameCorrectCount++;
+        gameStreak++;
+        const points = 10 + Math.min(gameStreak * 2, 10);
+        gameScore += points;
+        
+        clickedBtn.classList.remove('bg-slate-50', 'border-slate-200', 'text-slate-800');
+        clickedBtn.classList.add('bg-emerald-500', 'text-white', 'border-emerald-600');
+
+        toast.className = "p-3.5 rounded-2xl text-center font-black text-base sm:text-lg bg-emerald-100 text-emerald-800 border border-emerald-300";
+        toast.innerHTML = `<i class="fa-solid fa-circle-check mr-1.5"></i> 正確！+${points} 分 (連勝 ${gameStreak})`;
+
+        setTimeout(() => {
+          currentQuestionIdx++;
+          updateGameStatsUI();
+          renderQuestion();
+        }, 850);
+
+      } else {
+        // Wrong Answer
+        sfx.playWrong();
+        gameWrongCount++;
+        gameStreak = 0;
+        gameHearts--;
+
+        clickedBtn.classList.remove('bg-slate-50', 'border-slate-200', 'text-slate-800');
+        clickedBtn.classList.add('bg-rose-500', 'text-white', 'border-rose-600');
+
+        // Reveal correct button in emerald
+        allButtons.forEach(b => {
+          if (parseInt(b.dataset.index, 10) === q.ans) {
+            b.classList.remove('bg-slate-50', 'border-slate-200');
+            b.classList.add('bg-emerald-500', 'text-white', 'border-emerald-600');
+          }
+        });
+
+        updateHeartsUI();
+
+        toast.className = "p-3.5 rounded-2xl text-center font-black text-base sm:text-lg bg-rose-100 text-rose-800 border border-rose-300";
+        toast.innerHTML = `<i class="fa-solid fa-circle-xmark mr-1.5"></i> 答錯了！正確答案是：<strong>${q.options[q.ans]}</strong>`;
+
+        if (gameHearts <= 0) {
+          setTimeout(() => {
+            finishGame("防線失守！累計答錯 3 次，挑戰終止。");
+          }, 1100);
+        } else {
+          setTimeout(() => {
+            currentQuestionIdx++;
+            renderQuestion();
+          }, 1300);
         }
+      }
+    }
 
-        function fallbackCopy(text) {
-            const tempInput = document.createElement('input');
-            tempInput.value = text;
-            document.body.appendChild(tempInput);
-            tempInput.select();
-            try {
-                document.execCommand('copy');
-                showToast("網址已成功複製到剪貼簿！");
-            } catch (err) {
-                showToast("請長按網址進行複製分享");
-            }
-            document.body.removeChild(tempInput);
+    function finishGame(reason) {
+      if (gameTimer) clearInterval(gameTimer);
+      isGameRunning = false;
+      sfx.playFinish();
+
+      document.getElementById('btnEarlyFinish').classList.add('hidden');
+      document.getElementById('gameScreenPlaying').classList.add('hidden');
+      document.getElementById('gameScreenFinished').classList.remove('hidden');
+
+      document.getElementById('finishReason').textContent = reason;
+      document.getElementById('statTotal').textContent = gameTotalAnswered;
+      document.getElementById('statCorrect').textContent = gameCorrectCount;
+      document.getElementById('statWrong').textContent = gameWrongCount;
+      document.getElementById('statScore').textContent = gameScore;
+
+      const accuracy = gameTotalAnswered > 0 ? Math.round((gameCorrectCount / gameTotalAnswered) * 100) : 0;
+
+      const iconBg = document.getElementById('finishIconBg');
+      const icon = document.getElementById('finishIcon');
+      if (gameHearts > 0 && gameScore >= 50) {
+        iconBg.className = "w-20 h-20 rounded-full mx-auto flex items-center justify-center text-4xl shadow-md bg-amber-100 text-amber-600";
+        icon.className = "fa-solid fa-trophy";
+      } else {
+        iconBg.className = "w-20 h-20 rounded-full mx-auto flex items-center justify-center text-4xl shadow-md bg-rose-100 text-rose-500";
+        icon.className = "fa-solid fa-shield-halved";
+      }
+
+      populate4FReflection(accuracy);
+    }
+
+    function populate4FReflection(accuracy) {
+      const cls = document.getElementById('selectClass').value;
+      const seat = document.getElementById('selectSeat').value;
+      const name = document.getElementById('inputName').value;
+
+      document.getElementById('certStudentInfo').textContent = `${cls} ${seat} ${name}`;
+      document.getElementById('certScore').textContent = `${gameScore} 分`;
+      document.getElementById('certAccuracy').textContent = `${accuracy}%`;
+
+      // 1. Facts
+      document.getElementById('input4FFacts').value = 
+        `我在 2 分鐘挑戰賽共作答了 ${gameTotalAnswered} 題，答對 ${gameCorrectCount} 題，答錯 ${gameWrongCount} 題，命中率為 ${accuracy}%，總得分 ${gameScore} 分。在幾何實驗室中，我親手驗證了平行四邊形沿高剪開可平移成長方形，且兩個全等三角形能拼合為一個平行四邊形。`;
+
+      // 2. Feelings
+      let feelStr = "剛開始看到題目計時感覺很緊張刺激，但當我把圖形拼湊成功時，覺得很豁然開朗與有成就感！";
+      if (gameHearts <= 0) {
+        feelStr = "挑戰中因為粗心踩到斜邊干擾項答錯 3 次，覺得稍微可惜，但我也深刻體會到找出垂直高有多重要！";
+      } else if (gameScore > 80) {
+        feelStr = "順利答對超多題目，感覺自己對底和高的對應非常有自信，快速答題時手感非常流暢！";
+      }
+      document.getElementById('input4FFeelings').value = feelStr;
+
+      // 3. Findings
+      document.getElementById('input4FFindings').value = 
+        "我發現三角形的面積公式『底×高÷2』的除以2，是因為兩個全等三角形剛好拼成一個平行四邊形。而且計算面積時，一定要用『互相垂直』的底和高，不能誤用斜邊。此外，人類直線劃分邊界會破壞野生動物棲地，預留生態綠廊才能實現環境永續。";
+
+      // 4. Future
+      document.getElementById('input4FFuture').value = 
+        "下次如果遇到更複雜的圖形（如梯形或多邊形），我會嘗試使用『切割法』或『拼湊法』把它們拆成熟悉的長方形與三角形來算。在生活中看到農地圍籬時，我也會思考是否為動物留下了友善通行的綠廊通道。";
+    }
+
+    function goToReflectionTab() {
+      switchTab('record');
+    }
+
+    // High-Resolution PNG Certificate Image Exporter
+    function exportResultImage() {
+      const canvas = document.getElementById('hiddenCertCanvas');
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+
+      // Background Gradient
+      const grad = ctx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, "#F0FDF4");
+      grad.addColorStop(1, "#FFFFFF");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+
+      // Certificate Border
+      ctx.strokeStyle = "#059669";
+      ctx.lineWidth = 14;
+      ctx.strokeRect(20, 20, w - 40, h - 40);
+
+      ctx.strokeStyle = "#F59E0B";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(32, 32, w - 64, h - 64);
+
+      // Header Badge & Title
+      ctx.fillStyle = "#065F46";
+      ctx.font = "bold 24px 'Noto Sans TC'";
+      ctx.textAlign = "center";
+      ctx.fillText("🌿 數感實驗室 校訂課程認證卡 🌿", w / 2, 85);
+
+      ctx.fillStyle = "#0F172A";
+      ctx.font = "900 46px 'Noto Sans TC'";
+      ctx.fillText("幾何領地探究認證書", w / 2, 145);
+
+      // Student Meta
+      const cls = document.getElementById('selectClass').value;
+      const seat = document.getElementById('selectSeat').value;
+      const name = document.getElementById('inputName').value;
+      const dateStr = new Date().toLocaleDateString('zh-TW');
+
+      ctx.fillStyle = "#334155";
+      ctx.font = "bold 22px 'Noto Sans TC'";
+      ctx.fillText(`學員姓名：${cls} ${seat} ${name}   |   認證單元：消失的領地(一)   |   認證日期：${dateStr}`, w / 2, 195);
+
+      // Stats Banner Box
+      ctx.fillStyle = "#ECFDF5";
+      ctx.strokeStyle = "#A7F3D0";
+      ctx.lineWidth = 2;
+      ctx.fillRect(60, 225, w - 120, 90);
+      ctx.strokeRect(60, 225, w - 120, 90);
+
+      ctx.fillStyle = "#065F46";
+      ctx.font = "bold 20px 'Noto Sans TC'";
+      ctx.textAlign = "left";
+      ctx.fillText(`挑戰賽得分：${gameScore} 分`, 90, 278);
+      ctx.fillText(`答題數：${gameTotalAnswered} 題`, 370, 278);
+      ctx.fillText(`正確率：${gameTotalAnswered > 0 ? Math.round((gameCorrectCount / gameTotalAnswered) * 100) : 0}%`, 620, 278);
+      ctx.fillText(`剪拼驗證：完全守恆`, 890, 278);
+
+      // 4F Boxes
+      const f1 = document.getElementById('input4FFacts').value;
+      const f2 = document.getElementById('input4FFeelings').value;
+      const f3 = document.getElementById('input4FFindings').value;
+      const f4 = document.getElementById('input4FFuture').value;
+
+      function draw4FCard(x, y, cardW, cardH, title, color, text) {
+        ctx.save();
+        ctx.fillStyle = "#FFFFFF";
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3;
+        ctx.fillRect(x, y, cardW, cardH);
+        ctx.strokeRect(x, y, cardW, cardH);
+
+        ctx.fillStyle = color;
+        ctx.font = "900 20px 'Noto Sans TC'";
+        ctx.textAlign = "left";
+        ctx.fillText(title, x + 16, y + 34);
+
+        ctx.fillStyle = "#1E293B";
+        ctx.font = "bold 16px 'Noto Sans TC'";
+        wrapText(ctx, text, x + 16, y + 66, cardW - 32, 24);
+        ctx.restore();
+      }
+
+      function wrapText(context, text, x, y, maxWidth, lineHeight) {
+        const words = text.split('');
+        let line = '';
+        for (let n = 0; n < words.length; n++) {
+          const testLine = line + words[n];
+          const metrics = context.measureText(testLine);
+          if (metrics.width > maxWidth && n > 0) {
+            context.fillText(line, x, y);
+            line = words[n];
+            y += lineHeight;
+          } else {
+            line = testLine;
+          }
         }
+        context.fillText(line, x, y);
+      }
 
-        // 全螢幕切換功能
-        function toggleFullscreen() {
-            const doc = document;
-            const docEl = document.documentElement;
+      const cardW = (w - 150) / 2;
+      const cardH = 205;
 
-            const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
-            const exitFS = doc.exitFullscreen || doc.webkitExitFullscreen || doc.mozCancelFullScreen || doc.msExitFullscreen;
-            const fsElement = doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement;
+      draw4FCard(60, 340, cardW, cardH, "[Facts 客觀事實]", "#2563EB", f1);
+      draw4FCard(60 + cardW + 30, 340, cardW, cardH, "[Feelings 感受反應]", "#E11D48", f2);
+      draw4FCard(60, 565, cardW, cardH, "[Findings 發現收穫]", "#D97706", f3);
+      draw4FCard(60 + cardW + 30, 565, cardW, cardH, "[Future 未來應用]", "#059669", f4);
 
-            if (!fsElement) {
-                if (requestFS) {
-                    requestFS.call(docEl).then(syncFullscreenIcon).catch(() => {
-                        showToast("已嘗試切換全螢幕");
-                    });
-                } else {
-                    showToast("您的裝置環境不支援全螢幕切換");
-                }
-            } else {
-                if (exitFS) exitFS.call(doc);
-            }
+      // Watermark Stamp
+      ctx.save();
+      ctx.translate(w - 170, 160);
+      ctx.rotate(15 * Math.PI / 180);
+      ctx.strokeStyle = "rgba(5, 150, 105, 0.4)";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(-80, -35, 160, 70);
+      ctx.fillStyle = "rgba(5, 150, 105, 0.5)";
+      ctx.font = "900 22px 'Noto Sans TC'";
+      ctx.textAlign = "center";
+      ctx.fillText("數感特優認證", 0, 8);
+      ctx.restore();
+
+      // Footer line
+      ctx.fillStyle = "#64748B";
+      ctx.font = "bold 16px 'Noto Sans TC'";
+      ctx.textAlign = "center";
+      ctx.fillText("數感實驗室  | 互動學習系統 | Design：S.C. Kuo", w / 2, h - 45);
+
+      // Download + iPad Preview Modal Trigger
+      const dataUrl = canvas.toDataURL('image/png');
+      const filename = `消失的領地_4F學習證書_${cls}_${seat}_${name}.png`;
+
+      // Trigger direct download
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = dataUrl;
+      link.click();
+
+      // Show on-screen preview modal for iPad users
+      document.getElementById('previewImageTag').src = dataUrl;
+      document.getElementById('modalPreview').classList.remove('hidden');
+      showGlobalToast("證書圖片已生成！", "fa-circle-check");
+    }
+
+    function closePreviewModal() {
+      document.getElementById('modalPreview').classList.add('hidden');
+    }
+
+    // Tab Switcher with Timer Safeguard
+    function switchTab(tab) {
+      // Pause quiz timer if leaving game tab
+      if (currentTab === 'game' && tab !== 'game' && isGameRunning) {
+        if (gameTimer) clearInterval(gameTimer);
+        showGlobalToast("計時器已為您暫停，切回極速賽即可繼續！", "fa-pause");
+      } else if (currentTab !== 'game' && tab === 'game' && isGameRunning) {
+        // Resume timer
+        if (gameTimer) clearInterval(gameTimer);
+        gameTimer = setInterval(() => {
+          gameSecondsLeft--;
+          if (gameSecondsLeft <= 0) {
+            gameSecondsLeft = 0;
+            finishGame("時間到！2分鐘極速賽順利完成！");
+          }
+          updateTimerUI();
+        }, 1000);
+      }
+
+      currentTab = tab;
+      const tabs = ['Lab', 'Game', 'Record'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tabBtn${t}`);
+        const content = document.getElementById(`tabContent${t}`);
+        if (!btn || !content) return;
+        
+        if (t.toLowerCase() === tab) {
+          btn.className = "touch-btn px-3 sm:px-4 py-2 rounded-xl text-base sm:text-lg font-bold transition-all bg-emerald-600 text-white shadow-md shadow-emerald-200";
+          content.classList.remove('hidden');
+        } else {
+          btn.className = "touch-btn px-3 sm:px-4 py-2 rounded-xl text-base sm:text-lg font-bold transition-all bg-slate-100 hover:bg-slate-200 text-slate-700";
+          content.classList.add('hidden');
         }
+      });
 
-        function syncFullscreenIcon() {
-            const fsElement = document.fullscreenElement || document.webkitFullscreenElement;
-            const icon = document.getElementById('fullscreenIcon');
-            if (!icon) return;
-            if (fsElement) {
-                icon.classList.remove('fa-expand');
-                icon.classList.add('fa-compress');
-            } else {
-                icon.classList.remove('fa-compress');
-                icon.classList.add('fa-expand');
-            }
+      if (tab === 'lab') {
+        setTimeout(resizeLabCanvas, 60);
+      }
+    }
+
+    // Modal Controls with Backdrop Click
+    function handleModalBackdropClick(e, modalId) {
+      if (e.target.id === modalId) {
+        document.getElementById(modalId).classList.add('hidden');
+      }
+    }
+
+    function openGuideModal() {
+      document.getElementById('modalGuide').classList.remove('hidden');
+    }
+    function closeGuideModal() {
+      document.getElementById('modalGuide').classList.add('hidden');
+    }
+
+    function openQrModal() {
+      const modal = document.getElementById('modalQr');
+      modal.classList.remove('hidden');
+      const container = document.getElementById('qrCanvasContainer');
+      container.innerHTML = "";
+
+      let currentUrl = window.location.href;
+      if (!currentUrl || currentUrl.startsWith('about:') || currentUrl.startsWith('blob:')) {
+        currentUrl = window.location.origin || "https://mathsenselab.edu.tw";
+      }
+      document.getElementById('qrUrlInput').value = currentUrl;
+
+      try {
+        if (typeof QRCode !== 'undefined') {
+          new QRCode(container, {
+            text: currentUrl,
+            width: 190,
+            height: 190,
+            colorDark: "#0F172A",
+            colorLight: "#FFFFFF",
+            correctLevel: QRCode.CorrectLevel.M
+          });
+        } else {
+          throw new Error("QRCode.js not loaded");
         }
+      } catch (err) {
+        // Fallback dual image API
+        const qrImg = document.createElement('img');
+        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=190x190&data=${encodeURIComponent(currentUrl)}`;
+        qrImg.className = "w-[190px] h-[190px] block";
+        qrImg.alt = "QR Code";
+        container.appendChild(qrImg);
+      }
+    }
 
-        // 頁籤切換控制
-        function switchTab(actNum) {
-            [1, 2, 3, 4].forEach(num => {
-                const actEl = document.getElementById(`act${num}`);
-                const tabBtn = document.getElementById(`nav-tab${num}`);
-                if (!actEl || !tabBtn) return;
+    function closeQrModal() {
+      document.getElementById('modalQr').classList.add('hidden');
+    }
 
-                if (num === actNum) {
-                    actEl.classList.remove('hidden');
-                    tabBtn.className = "py-3 rounded-xl text-base md:text-lg font-black transition-all bg-amber-400 text-slate-900 shadow-md flex items-center justify-center gap-1";
-                } else {
-                    actEl.classList.add('hidden');
-                    tabBtn.className = "py-3 rounded-xl text-base md:text-lg font-black transition-all text-slate-600 hover:bg-slate-300 flex items-center justify-center gap-1";
-                }
-            });
+    // URL Copy Backup
+    function copyCurrentUrl() {
+      const urlInput = document.getElementById('qrUrlInput');
+      const url = urlInput.value || window.location.href;
 
-            // 切換到活動二時重繪畫布確保尺寸精確
-            if (actNum === 2) {
-                setTimeout(() => {
-                    drawCanvas1();
-                    drawCanvas2();
-                }, 60);
-            }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(() => {
+          showGlobalToast("網址已成功複製到剪貼簿！", "fa-circle-check");
+        }).catch(() => {
+          fallbackCopyText(url);
+        });
+      } else {
+        fallbackCopyText(url);
+      }
+    }
+
+    function fallbackCopyText(text) {
+      const tempInput = document.createElement("input");
+      tempInput.value = text;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      tempInput.setSelectionRange(0, 99999);
+      try {
+        document.execCommand('copy');
+        showGlobalToast("網址已成功複製到剪貼簿！", "fa-circle-check");
+      } catch (e) {
+        showGlobalToast("複製失敗，請手動複製網址", "fa-circle-exclamation");
+      }
+      document.body.removeChild(tempInput);
+    }
+
+    function showGlobalToast(msg, icon = "fa-circle-check") {
+      const toast = document.getElementById('globalToast');
+      const msgEl = document.getElementById('globalToastMsg');
+      const iconEl = document.getElementById('globalToastIcon');
+      msgEl.textContent = msg;
+      iconEl.className = `fa-solid ${icon} text-emerald-400`;
+      toast.classList.remove('hidden');
+      setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 2500);
+    }
+
+    // Fullscreen Toggle with WebKit and state change sync
+    function toggleFullscreen() {
+      const isFull = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
+      if (!isFull) {
+        const root = document.documentElement;
+        if (root.requestFullscreen) {
+          root.requestFullscreen().catch(() => {});
+        } else if (root.webkitRequestFullscreen) {
+          root.webkitRequestFullscreen();
+        } else if (root.mozRequestFullScreen) {
+          root.mozRequestFullScreen();
         }
-
-        // 活動一：預測選擇
-        function makePrediction(choice, index) {
-            currentPrediction = choice;
-            const resDiv = document.getElementById('predictionResult');
-            resDiv.classList.remove('hidden');
-            resDiv.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-500 mr-2"></i>你的預測是：<strong>${choice}</strong>！請前往「活動二」親手剪貼驗證！`;
-            
-            [1, 2, 3].forEach(id => {
-                const btn = document.getElementById(`btnPred${id}`);
-                if (id === index) {
-                    btn.classList.add('ring-4', 'ring-indigo-600', 'scale-105');
-                } else {
-                    btn.classList.remove('ring-4', 'ring-indigo-600', 'scale-105');
-                }
-            });
-
-            showToast("預測已記錄！");
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        } else if (document.mozCancelFullScreen) {
+          document.mozCancelFullScreen();
         }
-
-        // 計算 Canvas 容器最佳像素寬度
-        function getCanvasWidth(canvas) {
-            if (!canvas || !canvas.parentElement) return 500;
-            const parentWidth = canvas.parentElement.clientWidth;
-            if (parentWidth <= 0) return 500;
-            return Math.max(280, Math.min(parentWidth - 32, 540));
-        }
-
-        function initCanvases() {
-            canvas1 = document.getElementById('canvas1');
-            if (canvas1) {
-                ctx1 = canvas1.getContext('2d');
-                setupCanvasTouchHandlers(canvas1, 1);
-            }
-            
-            canvas2 = document.getElementById('canvas2');
-            if (canvas2) {
-                ctx2 = canvas2.getContext('2d');
-                setupCanvasTouchHandlers(canvas2, 2);
-            }
-
-            drawCanvas1();
-            drawCanvas2();
-        }
-
-        function setupCanvasTouchHandlers(canvas, type) {
-            const handleStart = (x) => {
-                lastTouchX = x;
-                if (type === 1) isDraggingCanvas1 = true;
-                if (type === 2) isDraggingCanvas2 = true;
-            };
-
-            const handleMove = (x) => {
-                const deltaX = x - lastTouchX;
-                lastTouchX = x;
-
-                if (type === 1 && isDraggingCanvas1) {
-                    paraProgress = Math.min(100, Math.max(0, paraProgress + deltaX * 0.5));
-                    onParaSliderChange(paraProgress);
-                    document.getElementById('paraSlider').value = paraProgress;
-                }
-
-                if (type === 2 && isDraggingCanvas2) {
-                    triAngleProgress = Math.min(180, Math.max(0, triAngleProgress + deltaX * 0.8));
-                    onTriSliderChange(triAngleProgress);
-                    document.getElementById('triSlider').value = triAngleProgress;
-                }
-            };
-
-            const handleEnd = () => {
-                isDraggingCanvas1 = false;
-                isDraggingCanvas2 = false;
-            };
-
-            canvas.addEventListener('touchstart', (e) => {
-                if (e.touches.length > 0) handleStart(e.touches[0].clientX);
-            }, { passive: true });
-
-            canvas.addEventListener('touchmove', (e) => {
-                if (e.touches.length > 0) handleMove(e.touches[0].clientX);
-            }, { passive: true });
-
-            canvas.addEventListener('touchend', handleEnd);
-            canvas.addEventListener('touchcancel', handleEnd);
-
-            canvas.addEventListener('mousedown', (e) => handleStart(e.clientX));
-            window.addEventListener('mousemove', (e) => handleMove(e.clientX));
-            window.addEventListener('mouseup', handleEnd);
-        }
-
-        function drawGrid(ctx, width, height) {
-            ctx.strokeStyle = '#f1f5f9';
-            ctx.lineWidth = 1;
-            for (let x = 0; x < width; x += 20) {
-                ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, height);
-                ctx.stroke();
-            }
-            for (let y = 0; y < height; y += 20) {
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(width, y);
-                ctx.stroke();
-            }
-        }
-
-        // Canvas 1: 平行四邊形剪貼繪製
-        function drawCanvas1() {
-            if (!canvas1 || !ctx1) return;
-            const width = canvas1.width = getCanvasWidth(canvas1);
-            const height = canvas1.height = 240;
-
-            ctx1.clearRect(0, 0, width, height);
-            drawGrid(ctx1, width, height);
-
-            const scale = Math.min(width / 520, 1);
-            const startX = 60 * scale;
-            const startY = 175 * scale;
-            const baseLen = 220 * scale;
-            const hLen = 110 * scale;
-            const offsetX = 70 * scale;
-
-            // 輔助底線
-            ctx1.beginPath();
-            ctx1.setLineDash([5, 5]);
-            ctx1.moveTo(startX - 20, startY);
-            ctx1.lineTo(startX + baseLen + offsetX + 30, startY);
-            ctx1.strokeStyle = '#cbd5e1';
-            ctx1.lineWidth = 2;
-            ctx1.stroke();
-            ctx1.setLineDash([]);
-
-            // 固定主要梯形部分
-            ctx1.beginPath();
-            ctx1.moveTo(startX + offsetX, startY - hLen);
-            ctx1.lineTo(startX + baseLen + offsetX, startY - hLen);
-            ctx1.lineTo(startX + baseLen, startY);
-            ctx1.lineTo(startX + offsetX, startY);
-            ctx1.closePath();
-            ctx1.fillStyle = '#6ee7b7';
-            ctx1.fill();
-            ctx1.strokeStyle = '#059669';
-            ctx1.lineWidth = 3;
-            ctx1.stroke();
-
-            // 平移直角三角形部分
-            const currentShift = (paraProgress / 100) * baseLen;
-            ctx1.save();
-            ctx1.translate(currentShift, 0);
-
-            ctx1.beginPath();
-            ctx1.moveTo(startX, startY);
-            ctx1.lineTo(startX + offsetX, startY);
-            ctx1.lineTo(startX + offsetX, startY - hLen);
-            ctx1.closePath();
-            ctx1.fillStyle = '#34d399';
-            ctx1.fill();
-            ctx1.strokeStyle = '#047857';
-            ctx1.lineWidth = 3;
-            ctx1.stroke();
-
-            // 剪裁線
-            ctx1.beginPath();
-            ctx1.setLineDash([4, 4]);
-            ctx1.moveTo(startX + offsetX, startY);
-            ctx1.lineTo(startX + offsetX, startY - hLen);
-            ctx1.strokeStyle = '#e11d48';
-            ctx1.lineWidth = 3;
-            ctx1.stroke();
-            ctx1.restore();
-
-            // 尺寸標記
-            ctx1.fillStyle = '#0f172a';
-            ctx1.font = `bold ${Math.max(14, 18 * scale)}px Noto Sans TC`;
-            ctx1.textAlign = 'center';
-            ctx1.fillText("底 = 10m", startX + offsetX + (baseLen / 2), startY + 30 * scale);
-
-            ctx1.fillStyle = '#e11d48';
-            ctx1.fillText("高 = 6m", Math.max(40, startX + offsetX - 45 * scale), startY - hLen / 2);
-        }
-
-        function onParaSliderChange(val) {
-            paraProgress = parseFloat(val);
-            document.getElementById('paraPercent').innerText = `${Math.round(paraProgress)}%`;
-            if (paraProgress > 0) isParaDone = true;
-            drawCanvas1();
-        }
-
-        function animateParaTransform() {
-            if (paraAnimId) cancelAnimationFrame(paraAnimId);
-            let target = paraProgress >= 100 ? 0 : 100;
-            function step() {
-                if (Math.abs(paraProgress - target) < 1.5) {
-                    paraProgress = target;
-                    onParaSliderChange(paraProgress);
-                    document.getElementById('paraSlider').value = paraProgress;
-                    return;
-                }
-                paraProgress += (target - paraProgress) * 0.12;
-                onParaSliderChange(paraProgress);
-                document.getElementById('paraSlider').value = paraProgress;
-                paraAnimId = requestAnimationFrame(step);
-            }
-            step();
-        }
-
-        function resetParaCanvas() {
-            if (paraAnimId) cancelAnimationFrame(paraAnimId);
-            paraProgress = 0;
-            document.getElementById('paraSlider').value = 0;
-            document.getElementById('paraPercent').innerText = "0%";
-            drawCanvas1();
-        }
-
-        // Canvas 2: 雙三角形旋轉拼貼繪製
-        function drawCanvas2() {
-            if (!canvas2 || !ctx2) return;
-            const width = canvas2.width = getCanvasWidth(canvas2);
-            const height = canvas2.height = 240;
-
-            ctx2.clearRect(0, 0, width, height);
-            drawGrid(ctx2, width, height);
-
-            const scale = Math.min(width / 520, 1);
-            const x1 = 80 * scale, y1 = 175 * scale;
-            const x2 = 280 * scale, y2 = 175 * scale;
-            const x3 = 200 * scale, y3 = 65 * scale;
-
-            // 1 號固定三角形
-            ctx2.beginPath();
-            ctx2.moveTo(x1, y1);
-            ctx2.lineTo(x2, y2);
-            ctx2.lineTo(x3, y3);
-            ctx2.closePath();
-            ctx2.fillStyle = '#93c5fd';
-            ctx2.fill();
-            ctx2.strokeStyle = '#1d4ed8';
-            ctx2.lineWidth = 3;
-            ctx2.stroke();
-
-            ctx2.fillStyle = '#1e3a8a';
-            ctx2.font = `bold ${Math.max(14, 16 * scale)}px Noto Sans TC`;
-            ctx2.textAlign = 'center';
-            ctx2.fillText("1號三角形", (x1 + x2 + x3) / 3, (y1 + y2 + y3) / 3 + 10);
-
-            // 2 號旋轉三角形 (繞右腰中點旋轉)
-            const pivotX = (x2 + x3) / 2;
-            const pivotY = (y2 + y3) / 2;
-            const rad = (triAngleProgress * Math.PI) / 180;
-
-            ctx2.save();
-            ctx2.translate(pivotX, pivotY);
-            ctx2.rotate(rad);
-            ctx2.translate(-pivotX, -pivotY);
-
-            ctx2.beginPath();
-            ctx2.moveTo(x1, y1);
-            ctx2.lineTo(x2, y2);
-            ctx2.lineTo(x3, y3);
-            ctx2.closePath();
-            ctx2.fillStyle = 'rgba(96, 165, 250, 0.85)';
-            ctx2.fill();
-            ctx2.strokeStyle = '#1e40af';
-            ctx2.lineWidth = 3;
-            ctx2.stroke();
-
-            ctx2.fillStyle = '#ffffff';
-            ctx2.fillText("2號三角形", (x1 + x2 + x3) / 3, (y1 + y2 + y3) / 3 + 5);
-            ctx2.restore();
-
-            // 底邊標籤
-            ctx2.fillStyle = '#dc2626';
-            ctx2.font = `bold ${Math.max(14, 18 * scale)}px Noto Sans TC`;
-            ctx2.fillText("底 = 10m", (x1 + x2) / 2, y1 + 30 * scale);
-        }
-
-        function onTriSliderChange(val) {
-            triAngleProgress = parseFloat(val);
-            document.getElementById('triAngle').innerText = `${Math.round(triAngleProgress)}°`;
-            if (triAngleProgress > 0) isTriDone = true;
-            drawCanvas2();
-        }
-
-        function animateTriRotate() {
-            if (triAnimId) cancelAnimationFrame(triAnimId);
-            let target = triAngleProgress >= 180 ? 0 : 180;
-            function step() {
-                if (Math.abs(triAngleProgress - target) < 1.5) {
-                    triAngleProgress = target;
-                    onTriSliderChange(triAngleProgress);
-                    document.getElementById('triSlider').value = triAngleProgress;
-                    return;
-                }
-                triAngleProgress += (target - triAngleProgress) * 0.12;
-                onTriSliderChange(triAngleProgress);
-                document.getElementById('triSlider').value = triAngleProgress;
-                triAnimId = requestAnimationFrame(step);
-            }
-            step();
-        }
-
-        function resetTriCanvas() {
-            if (triAnimId) cancelAnimationFrame(triAnimId);
-            triAngleProgress = 0;
-            document.getElementById('triSlider').value = 0;
-            document.getElementById('triAngle').innerText = "0°";
-            drawCanvas2();
-        }
-
-        // ==================== 活動三：2分鐘限時挑戰賽邏輯 & 4F 反思導入 ====================
-        function startTerritoryGame() {
-            isGameRunning = true;
-            gameTimeLeft = 120; // 120 秒 (2 分鐘)
-            gameMistakes = 0;   // 錯誤歸零
-            gameScore = 0;
-            gameCorrectCount = 0;
-            gameCombo = 0;
-            gameCurrentQIndex = 0;
-
-            // UI 狀態重設
-            document.getElementById('gameIntroView').classList.add('hidden');
-            document.getElementById('gameOverView').classList.add('hidden');
-            document.getElementById('gamePlayingView').classList.remove('hidden');
-
-            updateGameScoreUI();
-            updateGameHeartsUI();
-            updateGameTimerUI();
-
-            // 隨機徹底打亂 36 題精選題庫
-            shuffleArray(gameQuestions);
-
-            // 啟動倒數計時器
-            if (gameTimerInterval) clearInterval(gameTimerInterval);
-            gameTimerInterval = setInterval(() => {
-                gameTimeLeft--;
-                updateGameTimerUI();
-
-                if (gameTimeLeft <= 0) {
-                    endTerritoryGame("時間到！已完成 2 分鐘極限挑戰！", true);
-                }
-            }, 1000);
-
-            loadGameQuestion();
-        }
-
-        function updateGameTimerUI() {
-            const minutes = Math.floor(gameTimeLeft / 60);
-            const seconds = gameTimeLeft % 60;
-            const str = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-            document.getElementById('gameTimer').innerText = str;
-
-            const percent = Math.max(0, (gameTimeLeft / 120) * 100);
-            const bar = document.getElementById('gameProgressBar');
-            bar.style.width = `${percent}%`;
-
-            if (gameTimeLeft <= 20) {
-                bar.className = "bg-rose-600 h-full timer-progress-bar";
-            } else if (gameTimeLeft <= 50) {
-                bar.className = "bg-amber-500 h-full timer-progress-bar";
-            } else {
-                bar.className = "bg-indigo-600 h-full timer-progress-bar";
-            }
-        }
-
-        function updateGameHeartsUI() {
-            const container = document.getElementById('gameHearts');
-            const remaining = 3 - gameMistakes;
-            let html = '';
-            for (let i = 0; i < remaining; i++) {
-                html += '<i class="fa-solid fa-heart text-rose-500 animate-pulse"></i>';
-            }
-            for (let i = 0; i < gameMistakes; i++) {
-                html += '<i class="fa-solid fa-heart-crack text-slate-300"></i>';
-            }
-            container.innerHTML = html;
-        }
-
-        function updateGameScoreUI() {
-            document.getElementById('gameScore').innerText = gameScore;
-            const comboBadge = document.getElementById('comboBadge');
-            if (gameCombo >= 2) {
-                comboBadge.classList.remove('hidden');
-                comboBadge.innerHTML = `<i class="fa-solid fa-fire text-amber-500 mr-1"></i>連對 ${gameCombo} 題 (+${gameCombo * 5} 加分)`;
-            } else {
-                comboBadge.classList.add('hidden');
-            }
-        }
-
-        function loadGameQuestion() {
-            if (gameCurrentQIndex >= gameQuestions.length) {
-                shuffleArray(gameQuestions);
-                gameCurrentQIndex = 0;
-            }
-
-            gameActiveQuestion = gameQuestions[gameCurrentQIndex];
-            document.getElementById('questionNumBadge').innerText = `第 ${gameCorrectCount + gameMistakes + 1} 題`;
-            document.getElementById('gameQuestionText').innerText = gameActiveQuestion.q;
-
-            const optContainer = document.getElementById('gameOptionsContainer');
-            optContainer.innerHTML = '';
-
-            // 選項隨機洗牌，避免固定位置
-            const indices = shuffleArray([0, 1, 2, 3]);
-            indices.forEach(idx => {
-                const btn = document.createElement('button');
-                btn.className = "btn-touch w-full p-4 rounded-2xl bg-white border-2 border-indigo-200 hover:border-indigo-600 hover:bg-indigo-50/50 text-left text-lg md:text-xl font-black text-slate-800 shadow-md transition-all active:scale-[0.98]";
-                btn.innerText = gameActiveQuestion.options[idx];
-                btn.onclick = () => handleGameAnswer(idx === gameActiveQuestion.ans, btn);
-                optContainer.appendChild(btn);
-            });
-        }
-
-        function handleGameAnswer(isCorrect, btn) {
-            // 鎖定所有選項按鈕防止連點
-            document.querySelectorAll('#gameOptionsContainer button').forEach(b => b.disabled = true);
-
-            if (isCorrect) {
-                btn.classList.remove('bg-white', 'border-indigo-200');
-                btn.classList.add('bg-emerald-500', 'text-white', 'border-emerald-700');
-                gameCombo++;
-                const comboBonus = (gameCombo - 1) * 5;
-                gameScore += (20 + comboBonus);
-                gameCorrectCount++;
-                showToast(`答對了！+${20 + comboBonus} 分`);
-                updateGameScoreUI();
-
-                setTimeout(() => {
-                    gameCurrentQIndex++;
-                    loadGameQuestion();
-                }, 400);
-            } else {
-                btn.classList.remove('bg-white', 'border-indigo-200');
-                btn.classList.add('bg-rose-500', 'text-white', 'border-rose-700');
-                gameMistakes++;
-                gameCombo = 0;
-                updateGameHeartsUI();
-                updateGameScoreUI();
-                showToast(`答錯了！解析：${gameActiveQuestion.hint}`);
-
-                // 錯誤累計達到 3 次即終止遊戲
-                if (gameMistakes >= 3) {
-                    setTimeout(() => {
-                        endTerritoryGame("累積錯誤滿 3 次，挑戰終止！", false);
-                    }, 800);
-                } else {
-                    setTimeout(() => {
-                        gameCurrentQIndex++;
-                        loadGameQuestion();
-                    }, 800);
-                }
-            }
-        }
-
-        // 結束遊戲並自動將數據匯入 4F 反思架構
-        function endTerritoryGame(msg, isCompleted) {
-            if (gameTimerInterval) clearInterval(gameTimerInterval);
-            isGameRunning = false;
-
-            document.getElementById('gamePlayingView').classList.add('hidden');
-            document.getElementById('gameOverView').classList.remove('hidden');
-
-            const iconBox = document.getElementById('gameOverIconBox');
-            const titleEl = document.getElementById('gameOverTitle');
-            const subTitleEl = document.getElementById('gameOverSubtitle');
-
-            document.getElementById('finalScoreText').innerText = gameScore;
-            document.getElementById('finalCorrectText').innerText = gameCorrectCount;
-            document.getElementById('finalMistakeText').innerText = gameMistakes;
-
-            if (isCompleted) {
-                iconBox.className = "w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-inner bg-emerald-100 text-emerald-600";
-                iconBox.innerHTML = '<i class="fa-solid fa-trophy"></i>';
-                titleEl.innerText = "挑戰圓滿達成！";
-                subTitleEl.innerText = msg;
-            } else {
-                iconBox.className = "w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-inner bg-rose-100 text-rose-600";
-                iconBox.innerHTML = '<i class="fa-solid fa-heart-crack"></i>';
-                titleEl.innerText = "挑戰失誤終止！";
-                subTitleEl.innerText = msg;
-            }
-
-            // 【重點功能】：直接將遊戲客觀數據導入 4F 反思模式中的 Facts 與預設結構
-            const totalAnswered = gameCorrectCount + gameMistakes;
-            const factsSummary = `在限時 2 分鐘的領地挑戰中，共作答 ${totalAnswered} 題，答對 ${gameCorrectCount} 題，失誤 ${gameMistakes} 次，獲得 ${gameScore} 分。`;
-            document.getElementById('reflectFacts').value = factsSummary;
-
-            // 預設其他 4F 欄位，若學生未修改也保有基本反思
-            if (!document.getElementById('reflectFeelings').value.trim()) {
-                document.getElementById('reflectFeelings').value = isCompleted ? "⏱️ 限時倒數很刺激，能夠在時間內完成感到很有成就感！" : "⚡ 緊張得差點扣光愛心，覺得時間過得好快，需要更冷靜看題目。";
-            }
-            if (!document.getElementById('reflectFindings').value.trim()) {
-                document.getElementById('reflectFindings').value = "我發現很多題目會故意給斜邊的長度當干擾，計算面積一定要找互相垂直的「底」和「高」；三角形算完一定要除以 2！";
-            }
-            if (!document.getElementById('reflectFuture').value.trim()) {
-                document.getElementById('reflectFuture').value = "下次遇到幾何題目時，我會先圈出互相垂直的高，避免被斜邊騙了；在土地劃界時也要記得留生態廊道給動物。";
-            }
-
-            showToast("戰績已自動匯入 4F 反思架構！");
-        }
-
-        // 快捷點選晶片標籤輔助輸入
-        function appendChip(textareaId, text) {
-            const ta = document.getElementById(textareaId);
-            if (!ta) return;
-            if (ta.value.trim().length === 0) {
-                ta.value = text;
-            } else if (!ta.value.includes(text)) {
-                ta.value += "、" + text;
-            }
-            showToast("已加入反思內容！");
-        }
-
-        // 儲存 4F 反思與戰報至成果展示牆
-        function saveReflectionToShowcase() {
-            const nameInput = document.getElementById('gamePlayerName');
-            const groupName = (nameInput && nameInput.value.trim()) ? nameInput.value.trim() : "幾何探索小隊";
-
-            const facts = document.getElementById('reflectFacts').value.trim();
-            const feelings = document.getElementById('reflectFeelings').value.trim();
-            const findings = document.getElementById('reflectFindings').value.trim();
-            const future = document.getElementById('reflectFuture').value.trim();
-
-            const newRecord = {
-                id: Date.now(),
-                groupName: groupName,
-                prediction: currentPrediction || "尚未預測",
-                paraDone: isParaDone,
-                triDone: isTriDone,
-                score: gameScore,
-                correctCount: gameCorrectCount,
-                mistakes: gameMistakes,
-                facts: facts || "已完成 2 分鐘幾何極限挑戰",
-                feelings: feelings || "感到充實且收穫滿滿",
-                findings: findings || "深化了平行四邊形與三角形的底高垂直關係",
-                future: future || "持續運用等積變形策略解決生活幾何問題",
-                likes: 0,
-                time: new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })
-            };
-
-            showcaseWorks.unshift(newRecord);
-            updateShowcaseWall();
-            showToast("🎉 4F 反思與戰報已成功發布至展示牆！");
-            
-            // 自動平滑切換至「活動四：成果展示牆」
-            setTimeout(() => {
-                switchTab(4);
-            }, 600);
-        }
-
-        // 動態渲染成果展示牆卡片 (支援結構化 4F 反思呈現)
-        function updateShowcaseWall() {
-            const container = document.getElementById('showcaseContainer');
-            const badge = document.getElementById('tabBadge');
-            badge.innerText = showcaseWorks.length;
-
-            const timeBox = document.getElementById('captureTimestamp');
-            if (timeBox) {
-                timeBox.innerText = `紀錄時間：${new Date().toLocaleDateString('zh-TW')} ${new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}`;
-            }
-
-            if (showcaseWorks.length === 0) {
-                container.innerHTML = `
-                    <div id="emptyShowcaseState" class="col-span-full text-center py-16 bg-slate-50 border-4 border-dashed border-slate-200 rounded-3xl space-y-3">
-                        <i class="fa-solid fa-clipboard-question text-6xl text-slate-300"></i>
-                        <p class="text-2xl font-black text-slate-500">目前尚無作品展示</p>
-                        <p class="text-lg font-bold text-slate-400">請完成「活動三」領地挑戰賽，系統將直接導入 4F 反思架構，並將成果公開呈現於此！</p>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = showcaseWorks.map(work => `
-                <div class="bg-indigo-50/60 border-4 border-indigo-200 rounded-3xl p-6 shadow-md space-y-4 text-left transition-all hover:shadow-xl">
-                    <!-- 卡片頂部資訊列 -->
-                    <div class="flex justify-between items-center border-b-2 border-indigo-200 pb-3">
-                        <div>
-                            <span class="text-2xl font-black text-indigo-950">${escapeHtml(work.groupName)}</span>
-                            <span class="text-sm font-bold text-slate-500 ml-2">${work.time} 發布</span>
-                        </div>
-                        <button onclick="likeWork(${work.id})" class="flex items-center gap-1.5 px-3 py-1.5 bg-rose-100 text-rose-700 hover:bg-rose-200 rounded-xl font-black text-base transition-all border border-rose-300">
-                            <i class="fa-solid fa-heart text-rose-500"></i>
-                            <span>${work.likes}</span>
-                        </button>
-                    </div>
-
-                    <!-- 學習歷程標籤 -->
-                    <div class="flex flex-wrap gap-2 text-xs md:text-sm font-black">
-                        <span class="bg-amber-200 text-amber-900 px-2.5 py-1 rounded-lg">
-                            <i class="fa-solid fa-lightbulb mr-1"></i>預測：${escapeHtml(work.prediction)}
-                        </span>
-                        <span class="${work.paraDone ? 'bg-emerald-200 text-emerald-900' : 'bg-slate-200 text-slate-600'} px-2.5 py-1 rounded-lg">
-                            <i class="fa-solid fa-scissors mr-1"></i>平行剪貼：${work.paraDone ? '已完成' : '未操作'}
-                        </span>
-                        <span class="${work.triDone ? 'bg-sky-200 text-sky-900' : 'bg-slate-200 text-slate-600'} px-2.5 py-1 rounded-lg">
-                            <i class="fa-solid fa-rotate mr-1"></i>三角旋轉：${work.triDone ? '已完成' : '未操作'}
-                        </span>
-                    </div>
-
-                    <!-- 挑戰賽數據條 -->
-                    <div class="bg-white rounded-2xl p-3 border border-indigo-100 grid grid-cols-3 gap-2 text-center">
-                        <div class="bg-indigo-50 p-2 rounded-xl">
-                            <span class="text-xs font-bold text-indigo-600 block">得分</span>
-                            <span class="text-lg md:text-xl font-black text-indigo-900">${work.score} 分</span>
-                        </div>
-                        <div class="bg-emerald-50 p-2 rounded-xl">
-                            <span class="text-xs font-bold text-emerald-600 block">答對</span>
-                            <span class="text-lg md:text-xl font-black text-emerald-700">${work.correctCount} 題</span>
-                        </div>
-                        <div class="bg-rose-50 p-2 rounded-xl">
-                            <span class="text-xs font-bold text-rose-600 block">失誤</span>
-                            <span class="text-lg md:text-xl font-black text-rose-700">${work.mistakes} 次</span>
-                        </div>
-                    </div>
-
-                    <!-- 4F 深度反思區塊 (結構化條列) -->
-                    <div class="space-y-2 pt-1">
-                        <!-- F1: Facts -->
-                        <div class="bg-blue-50/70 p-3 rounded-xl border border-blue-200 text-sm md:text-base text-slate-800">
-                            <span class="font-black text-blue-800 flex items-center gap-1.5 mb-1">
-                                <i class="fa-solid fa-chart-pie text-blue-600"></i>[Facts 客觀事實]
-                            </span>
-                            <p class="font-bold leading-relaxed">${escapeHtml(work.facts)}</p>
-                        </div>
-
-                        <!-- F2: Feelings -->
-                        <div class="bg-emerald-50/70 p-3 rounded-xl border border-emerald-200 text-sm md:text-base text-slate-800">
-                            <span class="font-black text-emerald-800 flex items-center gap-1.5 mb-1">
-                                <i class="fa-solid fa-heart-pulse text-emerald-600"></i>[Feelings 感受體驗]
-                            </span>
-                            <p class="font-bold leading-relaxed">${escapeHtml(work.feelings)}</p>
-                        </div>
-
-                        <!-- F3: Findings -->
-                        <div class="bg-amber-50/70 p-3 rounded-xl border border-amber-200 text-sm md:text-base text-slate-800">
-                            <span class="font-black text-amber-800 flex items-center gap-1.5 mb-1">
-                                <i class="fa-solid fa-lightbulb text-amber-600"></i>[Findings 幾何發現]
-                            </span>
-                            <p class="font-bold leading-relaxed">${escapeHtml(work.findings)}</p>
-                        </div>
-
-                        <!-- F4: Future -->
-                        <div class="bg-rose-50/70 p-3 rounded-xl border border-rose-200 text-sm md:text-base text-slate-800">
-                            <span class="font-black text-rose-800 flex items-center gap-1.5 mb-1">
-                                <i class="fa-solid fa-compass text-rose-600"></i>[Future 未來策略]
-                            </span>
-                            <p class="font-bold leading-relaxed">${escapeHtml(work.future)}</p>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // 同儕點讚功能
-        function likeWork(id) {
-            const item = showcaseWorks.find(w => w.id === id);
-            if (item) {
-                item.likes++;
-                updateShowcaseWall();
-                showToast("為該作品送上了一顆愛心！");
-            }
-        }
-
-        // 成果改為匯出成圖片檔 (PNG)
-        function exportShowcasePNG() {
-            if (showcaseWorks.length === 0) {
-                showToast("目前尚無作品可匯出圖片！");
-                return;
-            }
-
-            const captureArea = document.getElementById('showcaseCaptureArea');
-            if (!captureArea) return;
-
-            showToast("正在生成 4F 成果高解析圖片，請稍候...");
-
-            // 優先使用 html2canvas 高解析度渲染
-            if (window.html2canvas) {
-                html2canvas(captureArea, {
-                    scale: 2, // 2倍高解析度
-                    backgroundColor: "#ffffff",
-                    useCORS: true,
-                    logging: false
-                }).then(canvas => {
-                    const imgUrl = canvas.toDataURL("image/png");
-                    const downloadLink = document.createElement("a");
-                    downloadLink.download = `消失的領地_4F學習成果牆_${new Date().toISOString().slice(0, 10)}.png`;
-                    downloadLink.href = imgUrl;
-                    document.body.appendChild(downloadLink);
-                    downloadLink.click();
-                    document.body.removeChild(downloadLink);
-                    showToast("成果圖片 (PNG) 匯出成功！");
-                }).catch(err => {
-                    fallbackCanvasImageExport();
-                });
-            } else {
-                fallbackCanvasImageExport();
-            }
-        }
-
-        // 原生 Canvas 2D 雙軌備援影像產生器
-        function fallbackCanvasImageExport() {
-            const exportCanvas = document.createElement('canvas');
-            const expCtx = exportCanvas.getContext('2d');
-            exportCanvas.width = 1000;
-            exportCanvas.height = 320 + (showcaseWorks.length * 280);
-
-            // 白色背景
-            expCtx.fillStyle = '#ffffff';
-            expCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
-
-            // 標題與裝飾線
-            expCtx.fillStyle = '#1e1b4b';
-            expCtx.font = 'bold 30px Noto Sans TC';
-            expCtx.fillText("消失的領地 - 全班學習成果與 4F 反思總表", 40, 60);
-
-            expCtx.fillStyle = '#64748b';
-            expCtx.font = 'bold 16px Noto Sans TC';
-            expCtx.fillText(`匯出時間：${new Date().toLocaleString('zh-TW')} | 成果紀錄：${showcaseWorks.length} 份`, 40, 95);
-
-            expCtx.strokeStyle = '#e2e8f0';
-            expCtx.lineWidth = 3;
-            expCtx.beginPath();
-            expCtx.moveTo(40, 115);
-            expCtx.lineTo(960, 115);
-            expCtx.stroke();
-
-            // 繪製每份作品 4F 摘要
-            let currY = 150;
-            showcaseWorks.forEach((work, index) => {
-                expCtx.fillStyle = '#f8fafc';
-                expCtx.fillRect(40, currY - 25, 920, 250);
-                expCtx.strokeStyle = '#cbd5e1';
-                expCtx.strokeRect(40, currY - 25, 920, 250);
-
-                expCtx.fillStyle = '#1e3a8a';
-                expCtx.font = 'bold 20px Noto Sans TC';
-                expCtx.fillText(`[${index + 1}] ${work.groupName} (${work.time}) | 得分：${work.score}分 (對${work.correctCount}/錯${work.mistakes}) | 愛心：${work.likes}`, 60, currY + 10);
-
-                expCtx.fillStyle = '#1d4ed8';
-                expCtx.font = 'bold 14px Noto Sans TC';
-                expCtx.fillText(`[Facts] ${work.facts}`, 60, currY + 45);
-
-                expCtx.fillStyle = '#047857';
-                expCtx.fillText(`[Feelings] ${work.feelings}`, 60, currY + 75);
-
-                expCtx.fillStyle = '#b45309';
-                expCtx.fillText(`[Findings] ${work.findings}`, 60, currY + 105);
-
-                expCtx.fillStyle = '#be123c';
-                expCtx.fillText(`[Future] ${work.future}`, 60, currY + 135);
-
-                currY += 280;
-            });
-
-            const link = document.createElement('a');
-            link.download = `消失的領地_4F成果牆_${new Date().toISOString().slice(0, 10)}.png`;
-            link.href = exportCanvas.toDataURL('image/png');
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            showToast("成果圖片 (PNG 備援引擎) 匯出成功！");
-        }
-
-        // 清空展示牆提示與安全執行 (自訂彈窗無原生 confirm)
-        function promptClearShowcase() {
-            if (showcaseWorks.length === 0) {
-                showToast("展示牆目前沒有可清空的資料！");
-                return;
-            }
-            openModal('confirmClearModal');
-        }
-
-        function confirmClearShowcase() {
-            showcaseWorks = [];
-            updateShowcaseWall();
-            closeModal('confirmClearModal');
-            showToast("展示牆已完全清空！");
-        }
-
-        function escapeHtml(str) {
-            return (str || '').replace(/&/g, '&amp;')
-                              .replace(/</g, '&lt;')
-                              .replace(/>/g, '&gt;')
-                              .replace(/"/g, '&quot;')
-                              .replace(/'/g, '&#039;');
-        }
-
-        // Toast 訊息提示器 (自動清除前次定時器防抖)
-        function showToast(msg) {
-            const toast = document.getElementById('toast');
-            if (!toast) return;
-            if (toastTimeout) clearTimeout(toastTimeout);
-            document.getElementById('toastMsg').innerText = msg;
-            toast.classList.remove('hidden');
-            toastTimeout = setTimeout(() => {
-                toast.classList.add('hidden');
-            }, 2400);
-        }
-    </script>
+      }
+    }
+
+    function syncFullscreenState() {
+      const icon = document.getElementById('fullscreenIcon');
+      const isFull = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
+      if (isFull) {
+        icon.classList.remove('fa-expand');
+        icon.classList.add('fa-compress');
+      } else {
+        icon.classList.remove('fa-compress');
+        icon.classList.add('fa-expand');
+      }
+    }
+
+    document.addEventListener('fullscreenchange', syncFullscreenState);
+    document.addEventListener('webkitfullscreenchange', syncFullscreenState);
+
+    // Escape Key Handler for All Modals
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeGuideModal();
+        closeQrModal();
+        closePreviewModal();
+      }
+    });
+
+    // Initialize Select Dropdowns (Requirement 9)
+    function initSelectors() {
+      const selectClass = document.getElementById('selectClass');
+      const selectSeat = document.getElementById('selectSeat');
+
+      // Populate Class 501 to 514
+      const classNames = [
+        "五年一班", "五年二班", "五年三班", "五年四班",
+        "五年五班", "五年六班", "五年七班", "五年八班",
+        "五年九班", "五年十班", "五年十一班", "五年十二班",
+        "五年十三班", "五年十四班"
+      ];
+      selectClass.innerHTML = "";
+      classNames.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c;
+        opt.textContent = c;
+        if (c === "五年一班") opt.selected = true;
+        selectClass.appendChild(opt);
+      });
+
+      // Populate Seat 1 to 28
+      selectSeat.innerHTML = "";
+      for (let i = 1; i <= 28; i++) {
+        const opt = document.createElement('option');
+        opt.value = `${i}號`;
+        opt.textContent = `${i} 號`;
+        if (i === 28) opt.selected = true; // Default 28
+        selectSeat.appendChild(opt);
+      }
+
+      function syncIdentity() {
+        studentClass = selectClass.value;
+        studentSeat = selectSeat.value;
+        studentName = document.getElementById('inputName').value || "同學";
+        document.getElementById('certStudentInfo').textContent = `${studentClass} ${studentSeat} ${studentName}`;
+      }
+
+      selectClass.onchange = syncIdentity;
+      selectSeat.onchange = syncIdentity;
+      document.getElementById('inputName').oninput = syncIdentity;
+    }
+
+    // Window Onload Lifecycle
+    window.onload = function () {
+      initSelectors();
+      resizeLabCanvas();
+      window.addEventListener('resize', resizeLabCanvas);
+
+      // Default Date setup
+      const today = new Date().toLocaleDateString('zh-TW');
+      const dateEl = document.getElementById('certDate');
+      if (dateEl) dateEl.textContent = today;
+
+      // Set initial reflection text
+      populate4FReflection(0);
+    };
+  </script>
 </body>
 </html>
